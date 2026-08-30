@@ -10,6 +10,7 @@ struct TabiMemoApp: App {
             let schema = Schema([Trip.self, LocationPoint.self, TripPhoto.self])
             let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
             modelContainer = try ModelContainer(for: schema, configurations: config)
+            SampleData.seedIfNeeded(modelContainer.mainContext)
         } catch {
             fatalError("Failed to create ModelContainer: \(error)")
         }
