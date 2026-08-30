@@ -4,5 +4,4 @@ import Foundation
 enum Route: Hashable {
     case tripDetail(Trip)
     case replay(Trip)
-    case settings
 }

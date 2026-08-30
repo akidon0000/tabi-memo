@@ -20,13 +20,6 @@ struct TripListView: View {
             }
             .navigationTitle("旅メモ")
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        path.append(.settings)
-                    } label: {
-                        Image(systemName: "gearshape")
-                    }
-                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         startNewTrip()
@@ -41,8 +34,6 @@ struct TripListView: View {
                     TripDetailView(trip: trip)
                 case let .replay(trip):
                     ReplayView(trip: trip)
-                case .settings:
-                    SettingsView()
                 }
             }
             .overlay {

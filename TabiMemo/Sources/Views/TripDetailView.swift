@@ -48,52 +48,6 @@ struct TripDetailView: View {
     }
 }
 
-/// 地図上の吹き出し型サムネイルピン。タップで写真の半モーダル表示を開く。
-private struct PhotoPinCallout: View {
-    let photo: TripPhoto
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: 0) {
-                thumbnail
-                    .frame(width: 52, height: 52)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .padding(4)
-                    .background(.background, in: RoundedRectangle(cornerRadius: 10))
-                CalloutTail()
-                    .fill(.background)
-                    .frame(width: 14, height: 7)
-            }
-            .shadow(color: .black.opacity(0.25), radius: 3, y: 1)
-        }
-        .buttonStyle(.plain)
-    }
-
-    @ViewBuilder
-    private var thumbnail: some View {
-        if let uiImage = UIImage(data: photo.imageData) {
-            Image(uiImage: uiImage)
-                .resizable()
-                .scaledToFill()
-        } else {
-            Color.secondary.opacity(0.3)
-        }
-    }
-}
-
-/// 吹き出しの下向きの尖り部分。
-private struct CalloutTail: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        path.move(to: CGPoint(x: rect.minX, y: rect.minY))
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
-        path.addLine(to: CGPoint(x: rect.midX, y: rect.maxY))
-        path.closeSubpath()
-        return path
-    }
-}
-
 /// 写真ピンをタップしたときに半モーダル(.medium)で開く詳細表示。
 private struct PhotoDetailSheet: View {
     let photo: TripPhoto
@@ -117,17 +71,5 @@ private struct PhotoDetailSheet: View {
             }
             .padding()
         }
-    }
-}
-
-extension LocationPoint {
-    var coordinate: CLLocationCoordinate2D {
-        CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
-    }
-}
-
-extension TripPhoto {
-    var coordinate: CLLocationCoordinate2D {
-        CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
     }
 }
