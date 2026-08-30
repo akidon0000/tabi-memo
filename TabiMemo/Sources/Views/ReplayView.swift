@@ -52,6 +52,7 @@ private struct RouteReplayView: View {
                         }
                     }
                 }
+                .mapStyle(.hybrid())
                 .ignoresSafeArea()
 
                 if let photo = sample.photo, photoStyle != .pinEmphasis {

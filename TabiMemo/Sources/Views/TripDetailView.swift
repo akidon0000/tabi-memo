@@ -26,6 +26,7 @@ struct TripDetailView: View {
                 }
             }
         }
+        .mapStyle(.hybrid())
         .navigationTitle(trip.name)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
