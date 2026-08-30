@@ -1,0 +1,26 @@
+# macOS
+.DS_Store
+
+# Logs / env
+*.log
+.env
+.env.local
+
+# Editors
+.vscode/
+.idea/
+.obsidian/
+
+# Xcode / Swift
+DerivedData/
+*.xcuserstate
+xcuserdata/
+.swiftpm/
+*.swiftpm
+
+# Tuist (generated projects/workspaces + caches)
+*.xcodeproj
+*.xcworkspace
+.build/
+Derived/
+Tuist/.build/
