@@ -18,7 +18,7 @@ struct CustomSheetView<Content: View>: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var sheetHeight: CGFloat = 0
-    /// nil の間は常にハーフモーダル(最新の config から計算)を選択扱いにする。
+    /// nil の間は常にコンパクト(最新の config から計算)を選択扱いにする。
     @State private var selectedDetent: PresentationDetent?
     @State private var scrollOffset: CGFloat = 0
 
@@ -61,16 +61,16 @@ struct CustomSheetView<Content: View>: View {
                 sheetHeight = newValue
             }
         }
-        .presentationDetents([.height(config.smallestDetentHeight), centerDetent, largestDetent], selection: detentSelection)
+        .presentationDetents([smallestDetent, centerDetent, largestDetent], selection: detentSelection)
         .presentationDragIndicator(.visible)
         .presentationBackgroundInteraction(.enabled(upThrough: centerDetent))
         .interactiveDismissDisabled()
     }
 
-    /// 開いた直後はハーフモーダル(中間の高さ)から始める。
+    /// 開いた直後はコンパクト(一番小さい高さ)から始める。
     private var detentSelection: Binding<PresentationDetent> {
         Binding(
-            get: { selectedDetent ?? centerDetent },
+            get: { selectedDetent ?? smallestDetent },
             set: { selectedDetent = $0 }
         )
     }
@@ -184,6 +184,10 @@ struct CustomSheetView<Content: View>: View {
 
     private static func centerDetent(for config: CustomSheetConfig) -> PresentationDetent {
         .height(centerHeight(for: config))
+    }
+
+    private var smallestDetent: PresentationDetent {
+        .height(config.smallestDetentHeight)
     }
 
     private var largestDetent: PresentationDetent {
