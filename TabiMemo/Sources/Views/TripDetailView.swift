@@ -95,9 +95,9 @@ struct TripDetailView: View {
     private func focusMap(on photo: TripPhoto) {
         let span = visibleRegion?.span ?? MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)
         withAnimation(.easeInOut(duration: 0.8)) {
-            // パネルが下半分を覆うので、スポットが見える上半分の中央に来るよう、中心を南へずらす。
+            // スポットが画面の上から1/4の高さに来るよう、中心を表示範囲の1/4だけ南へずらす(下のパネルに隠れない)。
             let center = CLLocationCoordinate2D(
-                latitude: photo.coordinate.latitude - span.latitudeDelta * 0.22,
+                latitude: photo.coordinate.latitude - span.latitudeDelta * 0.25,
                 longitude: photo.coordinate.longitude
             )
             cameraPosition = .region(MKCoordinateRegion(center: center, span: span))
