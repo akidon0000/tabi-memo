@@ -326,8 +326,6 @@ struct CustomSheetView<Content: View>: View {
         // 写真は×ボタンの行の下に置く(×は全開のときだけなので、行も全開に向けて確保する)。
         let barHeight = closeBarHeight * fullProgress
         let topPad = lerp((config.smallestDetentHeight - compactImageSize) / 2, 24, progress) + topExtra
-        // 全開のときに上に固定する行(バー・×)の高さ。写真とタイトルはこの下をスクロールで流れる。
-        let pinnedHeight = (24 + closeBarHeight + topExtra) * fullProgress
 
         // 写真とタイトル。全開ではスクロール量だけ上へ流す(中身と一緒に動く)。
         let scrolling = ZStack(alignment: .topLeading) {
@@ -382,14 +380,8 @@ struct CustomSheetView<Content: View>: View {
                         .updating($isPressing) { _, state, _ in state = true }
                 )
 
-            // 上に固定する行: 白い背景(写真が下をくぐる)、ドラッグバー、×ボタン。
+            // 上に固定する行: ドラッグバー、×ボタン。専用の背景は敷かず、パネル全体の背景(全開で白)と同じ色にする。写真はこの下を、切り取られずに流れる。
             ZStack(alignment: .top) {
-                Color(.systemBackground)
-                    .opacity(fullProgress)
-                    .frame(height: pinnedHeight)
-                    .frame(maxHeight: .infinity, alignment: .top)
-                    .allowsHitTesting(false)
-
                 Color.clear
                     .frame(height: 40 + topExtra)
                     .contentShape(Rectangle())

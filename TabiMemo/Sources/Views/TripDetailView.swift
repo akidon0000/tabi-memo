@@ -109,7 +109,7 @@ private extension TripDetailView {
     }
 }
 
-/// 写真の拡大表示。ピンチで拡大・ダブルタップで切り替え・拡大中はドラッグで移動。下に引くか×で閉じる。
+/// 写真の拡大表示。ピンチで拡大・ダブルタップで切り替え・拡大中はドラッグで移動。下スワイプか×で閉じる。
 private struct PhotoZoomView: View {
     let photo: TripPhoto
     var dismiss: () -> Void
@@ -120,43 +120,51 @@ private struct PhotoZoomView: View {
 
     var body: some View {
         ZStack {
-            Color.black.opacity(1 - min(max(offset.height, 0) / 600, 0.5)).ignoresSafeArea()
+            Color.black.opacity(1 - min(max(offset.height, 0) / 500, 0.6)).ignoresSafeArea()
             photo.image
                 .resizable()
                 .scaledToFit()
-                .scaleEffect(scale)
+                // 等倍で下に引いているときは、引いた量だけ小さくして「離れていく」ことを伝える。
+                .scaleEffect(scale * (scale <= 1 ? 1 - min(max(offset.height, 0) / 1500, 0.2) : 1))
                 .offset(offset)
-                .gesture(
-                    MagnifyGesture()
-                        .onChanged { scale = max(baseScale * $0.magnification, 1) }
-                        .onEnded { _ in
-                            baseScale = scale
-                            if scale <= 1.01 { reset() }
-                        }
-                )
-                .simultaneousGesture(
-                    DragGesture()
-                        .onChanged { value in
-                            if scale > 1 {
-                                offset = CGSize(width: baseOffset.width + value.translation.width,
-                                                height: baseOffset.height + value.translation.height)
-                            } else {
-                                offset = CGSize(width: 0, height: max(value.translation.height, 0))
-                            }
-                        }
-                        .onEnded { value in
-                            if scale <= 1 {
-                                if value.translation.height > 120 { dismiss() } else { withAnimation(.spring) { offset = .zero } }
-                            } else {
-                                baseOffset = offset
-                            }
-                        }
-                )
-                .onTapGesture(count: 2) {
-                    withAnimation(.spring(duration: 0.3)) {
-                        if scale > 1 { reset() } else { scale = 2.5; baseScale = 2.5 }
+        }
+        // 写真の上だけでなく、黒い余白のどこをドラッグしても反応するよう、全体に付ける。
+        .contentShape(Rectangle())
+        .gesture(
+            MagnifyGesture()
+                .onChanged { scale = max(baseScale * $0.magnification, 1) }
+                .onEnded { _ in
+                    baseScale = scale
+                    if scale <= 1.01 { reset() }
+                }
+        )
+        .simultaneousGesture(
+            DragGesture()
+                .onChanged { value in
+                    if scale > 1 {
+                        offset = CGSize(width: baseOffset.width + value.translation.width,
+                                        height: baseOffset.height + value.translation.height)
+                    } else {
+                        offset = CGSize(width: 0, height: max(value.translation.height, 0))
                     }
                 }
+                .onEnded { value in
+                    if scale <= 1 {
+                        // 80pt 以上引くか、下へ勢いよく払ったら閉じる。
+                        if value.translation.height > 80 || value.predictedEndTranslation.height > 300 {
+                            dismiss()
+                        } else {
+                            withAnimation(.spring) { offset = .zero }
+                        }
+                    } else {
+                        baseOffset = offset
+                    }
+                }
+        )
+        .onTapGesture(count: 2) {
+            withAnimation(.spring(duration: 0.3)) {
+                if scale > 1 { reset() } else { scale = 2.5; baseScale = 2.5 }
+            }
         }
         .overlay(alignment: .topTrailing) {
             Button { dismiss() } label: { Image(systemName: "xmark") }
