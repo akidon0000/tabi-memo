@@ -35,6 +35,9 @@ struct TripDetailView: View {
             sheetConfig.largestDetentHeight = newValue.height - 10
         }
         .navigationBarTitleDisplayMode(.inline)
+        .overlay(alignment: .bottomTrailing) {
+            addPhotoButton
+        }
         .sheet(item: $sheetItem) { item in
             let photo = item.photo
             CustomSheetView(
@@ -46,6 +49,26 @@ struct TripDetailView: View {
                 EmptyView()
             }
         }
+    }
+}
+
+private extension TripDetailView {
+    /// 右下のタブのような円形の追加ボタン。コンパクトのシートが出ているときは、その上に避ける。
+    var addPhotoButton: some View {
+        Button {
+            // TODO: 写真の追加(未実装)
+        } label: {
+            Image(systemName: "plus")
+                .font(.system(size: 22, weight: .bold))
+                .frame(width: 56, height: 56)
+                .background(.regularMaterial, in: .circle)
+                .shadow(color: .black.opacity(0.25), radius: 4, y: 2)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("写真を追加")
+        .padding(.trailing, 16)
+        .padding(.bottom, sheetItem == nil ? 16 : 80)
+        .animation(.spring(duration: 0.35), value: sheetItem == nil)
     }
 }
 
