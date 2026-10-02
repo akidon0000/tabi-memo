@@ -38,6 +38,8 @@ struct CustomSheetView<Content: View>: View {
     /// 追加ボタンはコンパクトのバナーと同じ高さの円にする。
     private var addButtonSize: CGFloat { config.smallestDetentHeight }
     private let addButtonGap: CGFloat = 10
+    /// 広がったときに写真の上へ確保する、×ボタンの行の高さ。
+    private let closeBarHeight: CGFloat = 44
     private let compactMargin: CGFloat = 16
     private let expandedMargin: CGFloat = 8
 
@@ -87,6 +89,13 @@ struct CustomSheetView<Content: View>: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+            // 全開のときは、上のセーフエリア(ステータスバー側)も白にする。
+            .overlay(alignment: .top) {
+                Color(.systemBackground)
+                    .frame(height: Self.windowSafeAreaTop)
+                    .opacity(fullProgress)
+                    .allowsHitTesting(false)
+            }
         }
     }
 
@@ -146,6 +155,8 @@ struct CustomSheetView<Content: View>: View {
         // 畳み側と展開側のタイトルを重ならないようにクロスフェードする。
         let compactOpacity = max(1 - progress * 4, 0)
         let expandedOpacity = max(progress * 2 - 1, 0)
+        // 写真は×ボタンの行の下に置く。
+        let barHeight = closeBarHeight * progress
 
         return ZStack(alignment: .topLeading) {
             headerImage
@@ -153,6 +164,7 @@ struct CustomSheetView<Content: View>: View {
                 .scaledToFill()
                 .frame(width: imageWidth, height: imageHeight)
                 .clipShape(RoundedRectangle(cornerRadius: radius))
+                .padding(.top, barHeight)
 
             titleBlock(fontSize: 16)
                 .frame(height: compactImageSize, alignment: .center)
@@ -160,8 +172,13 @@ struct CustomSheetView<Content: View>: View {
                 .opacity(compactOpacity)
 
             titleBlock(fontSize: 24)
-                .padding(.top, imageHeight + 12)
+                .padding(.top, barHeight + imageHeight + 12)
                 .opacity(expandedOpacity)
+
+            closeButton
+                .frame(maxWidth: .infinity, alignment: .trailing)
+                .opacity(expandedOpacity)
+                .allowsHitTesting(progress > 0.9)
         }
         .padding(.horizontal, headerPadding)
         .padding(.top, lerp((config.smallestDetentHeight - compactImageSize) / 2, 24, progress) + topExtra)
@@ -173,6 +190,22 @@ struct CustomSheetView<Content: View>: View {
                 .padding(.top, 6 + topExtra)
         }
         .contentShape(Rectangle())
+    }
+
+    private var closeButton: some View {
+        Button {
+            withAnimation(.spring(duration: 0.4, bounce: 0.15)) {
+                detent = .compact
+            }
+        } label: {
+            Image(systemName: "xmark")
+                .font(.system(size: 14, weight: .bold))
+                .foregroundStyle(.primary)
+                .frame(width: 32, height: 32)
+                .background(.thinMaterial, in: .circle)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("閉じる")
     }
 
     private func titleBlock(fontSize: CGFloat) -> some View {
@@ -236,7 +269,7 @@ struct CustomSheetView<Content: View>: View {
 
     private func headerHeight(progress: CGFloat, compact: CGFloat) -> CGFloat {
         let collapse = min(scrollOffset / 120, 1) * progress
-        let expanded = config.expandedImageHeight * (1 - 0.5 * collapse) + 24 + 12 + 12 + 40
+        let expanded = closeBarHeight + config.expandedImageHeight * (1 - 0.5 * collapse) + 24 + 12 + 12 + 40
         return lerp(compact, expanded, progress)
     }
 
