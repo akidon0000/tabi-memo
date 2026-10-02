@@ -212,6 +212,14 @@ struct CustomSheetView<Content: View>: View {
             ScrollView(.vertical) {
                 content
                     .opacity((1 - min(abs(pageOffset) / 160, 1)) * textReveal)
+                    // スワイプ先のメモも、スワイプ中から同じ位置に重ねて、動いた量に応じて濃くする。
+                    .overlay(alignment: .top) {
+                        if pageOffset != 0, let snap = neighbor?(peekStep) {
+                            snap.content
+                                .opacity(min(abs(pageOffset) / 160, 1))
+                                .allowsHitTesting(false)
+                        }
+                    }
                     .padding(.top, headerHeight)
                     .overlay(alignment: .top) {
                         // 全開ではヘッダー層がタッチを通すので、写真の位置に透明なタップ領域を置く。
@@ -341,6 +349,22 @@ struct CustomSheetView<Content: View>: View {
             titleBlock(fontSize: 24)
                 .padding(.top, barHeight + textImageHeight + 12)
                 .opacity(expandedOpacity)
+
+            // スワイプ先の日時。スワイプ中から現れ、手前の日時と入れ替わる。
+            if pageOffset != 0, let snap = neighbor?(peekStep) {
+                let reveal = min(abs(pageOffset) / 160, 1)
+                Text(snap.title)
+                    .font(.system(size: 24, weight: .bold))
+                    .lineLimit(1)
+                    .padding(.top, barHeight + textImageHeight + 12)
+                    .opacity(max(progress * 2 - 1, 0) * reveal)
+                Text(snap.title)
+                    .font(.system(size: 16, weight: .bold))
+                    .lineLimit(1)
+                    .frame(height: compactImageSize, alignment: .center)
+                    .padding(.leading, compactImageSize + 12)
+                    .opacity(compactOpacity * reveal)
+            }
         }
         .padding(.horizontal, headerPadding)
         .padding(.top, topPad)
@@ -429,16 +453,12 @@ struct CustomSheetView<Content: View>: View {
             var instant = Transaction()
             instant.disablesAnimations = true
             // 後ろで見えていた写真と入れ替わるので、そのまま手前に出す(点滅させない)。
-            // 文字は入れ替わった直後に薄い状態から始め、濃くしていく。
+            // 次の文字はスワイプ中に出し終えているので、入れ替わっても濃さは変えない。
             withTransaction(instant) {
                 pageOffset = 0
                 pageOpacity = 1
                 pageScale = 1
-                textReveal = 0
             }
-            // 0 を一度描画させてから濃くする(同じ更新にまとめると、アニメーションなしで 1 に飛ぶ)。
-            try? await Task.sleep(for: .milliseconds(60))
-            withAnimation(.easeOut(duration: 0.35)) { textReveal = 1 }
         }
     }
 
