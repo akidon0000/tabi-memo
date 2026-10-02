@@ -1,20 +1,14 @@
 import SwiftUI
 
-/// `CustomSheetView` の見た目を決める設定。
+/// Config
 struct CustomSheetConfig {
     var headerCornerRadius: CGFloat = 20
     var headerTint: Color = .yellow
-    /// 一番大きく開いたときのシート高さ。`.infinity` なら画面いっぱい。
     var largestDetentHeight: CGFloat = .infinity
-    /// 一番小さく畳んだときのシート高さ(ヘッダーだけが見える)。
     var smallestDetentHeight: CGFloat = 80
-    /// 全開時のヘッダー画像の高さ。
     var expandedImageHeight: CGFloat = 240
 }
 
-/// シートの高さに連動してヘッダーが変形するシート。
-/// 畳むと「小さなサムネイル＋タイトル」の帯になり、開くと大きな画像ヘッダーになる。
-/// 全開後のスクロールでもヘッダー画像が縮む。
 struct CustomSheetView<Content: View>: View {
     @Binding var config: CustomSheetConfig
     var title: String
@@ -61,7 +55,7 @@ struct CustomSheetView<Content: View>: View {
                     scrollOffset = newValue
                 }
 
-                header(progress: progress, height: headerHeight)
+                header(progress: progress, height: headerHeight, bottomInset: proxy.safeAreaInsets.bottom)
             }
             .onChange(of: proxy.size.height, initial: true) { _, newValue in
                 sheetHeight = newValue
@@ -81,7 +75,7 @@ struct CustomSheetView<Content: View>: View {
 
     // MARK: - Header
 
-    private func header(progress: CGFloat, height: CGFloat) -> some View {
+    private func header(progress: CGFloat, height: CGFloat, bottomInset: CGFloat) -> some View {
         // 全開後のスクロール量で、画像を最大で半分まで縮める。
         let collapse = min(scrollOffset / 120, 1) * progress
         let imageHeight = lerp(compactImageSize, config.expandedImageHeight * (1 - 0.5 * collapse), progress)
@@ -116,9 +110,11 @@ struct CustomSheetView<Content: View>: View {
         .padding(.top, lerp(16, 24, progress))
         .frame(maxWidth: .infinity, minHeight: height, maxHeight: height, alignment: .topLeading)
         .background(alignment: .top) {
+            // 畳んだ状態ではシート下端(ホームインジケーター側)までヘッダーの色で埋める。
             config.headerTint
                 .opacity(0.25 + 0.15 * progress)
                 .background(.regularMaterial)
+                .padding(.bottom, -bottomInset * (1 - progress))
         }
     }
 
@@ -157,7 +153,7 @@ struct CustomSheetView<Content: View>: View {
 
     private func headerHeight(progress: CGFloat) -> CGFloat {
         let collapse = min(scrollOffset / 120, 1) * progress
-        let compact = compactImageSize + 16 + 12
+        let compact = config.smallestDetentHeight
         let expanded = config.expandedImageHeight * (1 - 0.5 * collapse) + 24 + 12 + 12 + 40
         return lerp(compact, expanded, progress)
     }
