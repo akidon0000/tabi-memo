@@ -424,7 +424,9 @@ struct CustomSheetView<Content: View>: View {
                 pageScale = 1
                 textReveal = 0
             }
-            withAnimation(.easeOut(duration: 0.3)) { textReveal = 1 }
+            // 0 を一度描画させてから濃くする(同じ更新にまとめると、アニメーションなしで 1 に飛ぶ)。
+            try? await Task.sleep(for: .milliseconds(60))
+            withAnimation(.easeOut(duration: 0.35)) { textReveal = 1 }
         }
     }
 
