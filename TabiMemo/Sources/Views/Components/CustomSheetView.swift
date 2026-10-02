@@ -52,6 +52,8 @@ struct CustomSheetView<Content: View>: View {
     @State private var pageOffset: CGFloat = 0
     @State private var pageOpacity: CGFloat = 1
     @State private var pageScale: CGFloat = 1
+    /// 入れ替わった直後の文字の濃さ(0→1)。
+    @State private var textReveal: CGFloat = 1
     @State private var isSwiping = false
     @State private var peekStep = 1
     @State private var scrollPosition = ScrollPosition(edge: .top)
@@ -95,7 +97,14 @@ struct CustomSheetView<Content: View>: View {
             let halfCap = max(halfHeight - 100, config.expandedImageHeight)
             let fullCap = max(fullHeight * 0.6, halfCap)
             let imageCap = lerp(halfCap, fullCap, fullProgress)
-            let expandedImageHeight = min(max(fitHeight, config.expandedImageHeight), imageCap)
+            let ownImageHeight = min(max(fitHeight, config.expandedImageHeight), imageCap)
+            // スワイプ先の写真の高さ。スワイプ量に応じて、レイアウト(文字の位置・パネル内の高さ)を先に移す。
+            let nextImageHeight: CGFloat = {
+                guard pageOffset != 0, let snap = neighbor?(peekStep) else { return ownImageHeight }
+                return min(max(expandedImageWidth / max(snap.aspectRatio, 0.2), config.expandedImageHeight), imageCap)
+            }()
+            let swipeReveal = min(abs(pageOffset) / 160, 1)
+            let expandedImageHeight = lerp(ownImageHeight, nextImageHeight, swipeReveal)
 
             ZStack(alignment: .bottomLeading) {
                 panel(
@@ -106,6 +115,8 @@ struct CustomSheetView<Content: View>: View {
                     width: panelWidth,
                     expandedImageWidth: expandedImageWidth,
                     expandedImageHeight: expandedImageHeight,
+                    ownImageHeight: ownImageHeight,
+                    nextImageHeight: nextImageHeight,
                     heights: (compactHeight, halfHeight, fullHeight)
                 )
                 .padding(.leading, margin)
@@ -181,6 +192,8 @@ struct CustomSheetView<Content: View>: View {
         width: CGFloat,
         expandedImageWidth: CGFloat,
         expandedImageHeight: CGFloat,
+        ownImageHeight: CGFloat,
+        nextImageHeight: CGFloat,
         heights: (compact: CGFloat, half: CGFloat, full: CGFloat)
     ) -> some View {
         let headerHeight = headerHeight(progress: progress, fullProgress: fullProgress, compact: heights.compact, imageHeight: expandedImageHeight) + topExtra
@@ -191,13 +204,13 @@ struct CustomSheetView<Content: View>: View {
 
             // 前後の写真を後ろに先読みして出す。スワイプ量に応じて手前へ寄ってくる。
             if pageOffset != 0, let snap = neighbor?(peekStep) {
-                peekCard(snap, progress: progress, fullProgress: fullProgress, width: expandedImageWidth, topPad: lerp((config.smallestDetentHeight - compactImageSize) / 2, 24 + closeBarHeight * fullProgress, progress) + topExtra)
+                peekCard(snap, progress: progress, fullProgress: fullProgress, width: expandedImageWidth, expandedHeight: nextImageHeight, topPad: lerp((config.smallestDetentHeight - compactImageSize) / 2, 24 + closeBarHeight * fullProgress, progress) + topExtra)
             }
 
             ScrollView(.vertical) {
                 content
+                    .opacity((1 - min(abs(pageOffset) / 160, 1)) * textReveal)
                     .padding(.top, headerHeight)
-                    .modifier(PageCard(offset: pageOffset, opacity: pageOpacity, scale: pageScale))
             }
             .scrollPosition($scrollPosition)
             .scrollDisabled(detent != .full)
@@ -207,7 +220,7 @@ struct CustomSheetView<Content: View>: View {
                 scrollOffset = newValue
             }
 
-            header(progress: progress, fullProgress: fullProgress, height: headerHeight, topExtra: topExtra, expandedImageWidth: expandedImageWidth, expandedImageHeight: expandedImageHeight, heights: heights)
+            header(progress: progress, fullProgress: fullProgress, height: headerHeight, topExtra: topExtra, expandedImageWidth: expandedImageWidth, expandedImageHeight: expandedImageHeight, ownImageHeight: ownImageHeight, heights: heights)
         }
         // 左右スワイプで前後の写真へ(全開のみ)。指に追従して傾き、一定以上動かすと飛んでいって次の写真が入る(Tinder 風)。
         .simultaneousGesture(
@@ -275,9 +288,12 @@ struct CustomSheetView<Content: View>: View {
         topExtra: CGFloat,
         expandedImageWidth: CGFloat,
         expandedImageHeight: CGFloat,
+        ownImageHeight: CGFloat,
         heights: (compact: CGFloat, half: CGFloat, full: CGFloat)
     ) -> some View {
-        let imageHeight = lerp(compactImageSize, expandedImageHeight, progress)
+        // 写真そのものは自分の高さのまま。文字はスワイプ先の高さに合わせた位置へ先に寄る。
+        let imageHeight = lerp(compactImageSize, ownImageHeight, progress)
+        let textImageHeight = lerp(compactImageSize, expandedImageHeight, progress)
         let imageWidth = lerp(compactImageSize, expandedImageWidth, progress)
         // 写真の角は、パネルの角に同心(パネルの半径 - 写真までの余白)。全開ではパネルの角が消えるので 20 に寄せる。
         let inset = lerp((config.smallestDetentHeight - compactImageSize) / 2, headerPadding, progress)
@@ -285,7 +301,9 @@ struct CustomSheetView<Content: View>: View {
         let radius = lerp(concentricRadius, 20, fullProgress)
         // 畳み側と展開側のタイトルを重ならないようにクロスフェードする。
         let compactOpacity = max(1 - progress * 4, 0)
-        let expandedOpacity = max(progress * 2 - 1, 0)
+        // 左右スワイプ中は、動いた量に応じて文字を薄くする。入れ替わったあと、次の文字が濃くなって出る。
+        let textFade = (1 - min(abs(pageOffset) / 160, 1)) * textReveal
+        let expandedOpacity = max(progress * 2 - 1, 0) * textFade
         // 写真は×ボタンの行の下に置く(×は全開のときだけなので、行も全開に向けて確保する)。
         let barHeight = closeBarHeight * fullProgress
         let topPad = lerp((config.smallestDetentHeight - compactImageSize) / 2, 24, progress) + topExtra
@@ -299,22 +317,23 @@ struct CustomSheetView<Content: View>: View {
                 .scaledToFill()
                 .frame(width: imageWidth, height: imageHeight)
                 .clipShape(RoundedRectangle(cornerRadius: radius))
+                // 左右スワイプで動くのは写真だけ。文字は動かさず、移動が終わってから切り替わる。
+                .modifier(PageCard(offset: pageOffset, opacity: pageOpacity, scale: pageScale))
                 .padding(.top, barHeight)
 
             titleBlock(fontSize: 16)
                 .frame(height: compactImageSize, alignment: .center)
                 .padding(.leading, compactImageSize + 12)
-                .opacity(compactOpacity)
+                .opacity(compactOpacity * textFade)
 
             titleBlock(fontSize: 24)
-                .padding(.top, barHeight + imageHeight + 12)
+                .padding(.top, barHeight + textImageHeight + 12)
                 .opacity(expandedOpacity)
         }
         .padding(.horizontal, headerPadding)
         .padding(.top, topPad)
         .frame(maxWidth: .infinity, minHeight: height, maxHeight: height, alignment: .topLeading)
         .offset(y: -scrollOffset * fullProgress)
-        .modifier(PageCard(offset: pageOffset, opacity: pageOpacity, scale: pageScale))
 
         return ZStack(alignment: .top) {
             scrolling
@@ -365,43 +384,23 @@ struct CustomSheetView<Content: View>: View {
     }
 
     /// 後ろに見せる前後の写真。コンパクトは帯、広がると写真+日時+中身。
-    private func peekCard(_ snap: PageSnapshot, progress: CGFloat, fullProgress: CGFloat, width: CGFloat, topPad: CGFloat) -> some View {
+    private func peekCard(_ snap: PageSnapshot, progress: CGFloat, fullProgress: CGFloat, width: CGFloat, expandedHeight: CGFloat, topPad: CGFloat) -> some View {
         let reveal = min(abs(pageOffset) / 160, 1)
-        let imageHeight = lerp(compactImageSize, min(max(width / max(snap.aspectRatio, 0.2), config.expandedImageHeight), 480), progress)
+        // 文字は動かさないので、後ろの写真も手前と同じ大きさにそろえる(縦横比が違えば切り抜く)。
+        let imageHeight = lerp(compactImageSize, expandedHeight, progress)
         let imageWidth = lerp(compactImageSize, width, progress)
-        let compactOpacity = max(1 - progress * 4, 0)
-        let expandedOpacity = max(progress * 2 - 1, 0)
-        return ZStack(alignment: .topLeading) {
-            snap.image
-                .resizable()
-                .scaledToFill()
-                .frame(width: imageWidth, height: imageHeight)
-                .clipShape(RoundedRectangle(cornerRadius: lerp(24, 20, progress)))
-
-            Text(snap.title)
-                .font(.system(size: 16, weight: .bold))
-                .lineLimit(1)
-                .frame(height: compactImageSize, alignment: .center)
-                .padding(.leading, compactImageSize + 12)
-                .opacity(compactOpacity)
-
-            VStack(alignment: .leading, spacing: 12) {
-                Text(snap.title)
-                    .font(.system(size: 24, weight: .bold))
-                    .lineLimit(1)
-                // 中身(メモ)は自前で左右に余白を持つので、ここでの余白を打ち消す。
-                snap.content
-                    .padding(.horizontal, -headerPadding)
-            }
-            .padding(.top, imageHeight + 12)
-            .opacity(expandedOpacity)
-        }
-        .padding(.horizontal, headerPadding)
-        .padding(.top, topPad)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .scaleEffect(0.94 + 0.06 * reveal)
-        .opacity(0.4 + 0.6 * reveal)
-        .allowsHitTesting(false)
+        // 写真だけを先読みする。文字(日時・メモ)は、飛んで入れ替わったあとに切り替わる。
+        return snap.image
+            .resizable()
+            .scaledToFill()
+            .frame(width: imageWidth, height: imageHeight)
+            .clipShape(RoundedRectangle(cornerRadius: lerp(24, 20, progress)))
+            .padding(.horizontal, headerPadding)
+            .padding(.top, topPad)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .scaleEffect(0.94 + 0.06 * reveal, anchor: .top)
+            .opacity(0.4 + 0.6 * reveal)
+            .allowsHitTesting(false)
     }
 
     /// 指を離した向きへ飛ばして消し、差し替えた次の写真を手前に入れる。
@@ -418,11 +417,14 @@ struct CustomSheetView<Content: View>: View {
             var instant = Transaction()
             instant.disablesAnimations = true
             // 後ろで見えていた写真と入れ替わるので、そのまま手前に出す(点滅させない)。
+            // 文字は入れ替わった直後に薄い状態から始め、濃くしていく。
             withTransaction(instant) {
                 pageOffset = 0
                 pageOpacity = 1
                 pageScale = 1
+                textReveal = 0
             }
+            withAnimation(.easeOut(duration: 0.3)) { textReveal = 1 }
         }
     }
 
