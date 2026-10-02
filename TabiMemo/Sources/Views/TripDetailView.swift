@@ -28,6 +28,11 @@ struct TripDetailView: View {
             }
         }
         .mapStyle(.hybrid())
+        .onGeometryChange(for: CGSize.self) {
+            $0.size
+        } action: { newValue in
+            sheetConfig.largestDetentHeight = newValue.height - 10
+        }
         .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $selectedPhoto) { photo in
             CustomSheetView(

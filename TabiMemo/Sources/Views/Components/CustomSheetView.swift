@@ -24,7 +24,8 @@ struct CustomSheetView<Content: View>: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var sheetHeight: CGFloat = 0
-    @State private var selectedDetent: PresentationDetent
+    /// nil の間は常にハーフモーダル(最新の config から計算)を選択扱いにする。
+    @State private var selectedDetent: PresentationDetent?
     @State private var scrollOffset: CGFloat = 0
 
     init(
@@ -39,8 +40,6 @@ struct CustomSheetView<Content: View>: View {
         self.caption = caption
         self.headerImage = headerImage
         self.content = content()
-        // 開いた直後はハーフモーダル(中間の高さ)から始める。
-        _selectedDetent = State(initialValue: Self.centerDetent(for: config.wrappedValue))
     }
 
     private let compactImageSize: CGFloat = 48
@@ -68,8 +67,16 @@ struct CustomSheetView<Content: View>: View {
                 sheetHeight = newValue
             }
         }
-        .presentationDetents([.height(config.smallestDetentHeight), centerDetent, largestDetent], selection: $selectedDetent)
+        .presentationDetents([.height(config.smallestDetentHeight), centerDetent, largestDetent], selection: detentSelection)
         .presentationDragIndicator(.hidden)
+    }
+
+    /// 開いた直後はハーフモーダル(中間の高さ)から始める。
+    private var detentSelection: Binding<PresentationDetent> {
+        Binding(
+            get: { selectedDetent ?? centerDetent },
+            set: { selectedDetent = $0 }
+        )
     }
 
     // MARK: - Header
