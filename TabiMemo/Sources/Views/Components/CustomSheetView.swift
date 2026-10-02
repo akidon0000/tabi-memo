@@ -138,10 +138,15 @@ struct CustomSheetView<Content: View>: View {
     }
 
     /// コンパクトはカプセル、広がるにつれて端末の画面角に同心の丸みへ移る。全開では角丸なし。
-    private func panelShape(progress: CGFloat, edge: CGFloat) -> UnevenRoundedRectangle {
+    /// パネルの角の半径(全開で 0 にする前の値)。
+    private func panelRadius(progress: CGFloat) -> CGFloat {
         let capsule = config.smallestDetentHeight / 2
         let concentric = max(Self.deviceCornerRadius - expandedMargin, 0)
-        let radius = lerp(capsule, concentric, progress) * edge
+        return lerp(capsule, concentric, progress)
+    }
+
+    private func panelShape(progress: CGFloat, edge: CGFloat) -> UnevenRoundedRectangle {
+        let radius = panelRadius(progress: progress) * edge
         return UnevenRoundedRectangle(
             topLeadingRadius: radius,
             bottomLeadingRadius: radius,
@@ -157,7 +162,10 @@ struct CustomSheetView<Content: View>: View {
         let collapse = min(scrollOffset / 120, 1) * progress
         let imageHeight = lerp(compactImageSize, config.expandedImageHeight * (1 - 0.5 * collapse), progress)
         let imageWidth = lerp(compactImageSize, expandedImageWidth, progress)
-        let radius = lerp(10, 20, progress)
+        // 写真の角は、パネルの角に同心(パネルの半径 - 写真までの余白)。全開ではパネルの角が消えるので 20 に寄せる。
+        let inset = lerp((config.smallestDetentHeight - compactImageSize) / 2, headerPadding, progress)
+        let concentricRadius = max(panelRadius(progress: progress) - inset, 0)
+        let radius = lerp(concentricRadius, 20, fullProgress)
         // 畳み側と展開側のタイトルを重ならないようにクロスフェードする。
         let compactOpacity = max(1 - progress * 4, 0)
         let expandedOpacity = max(progress * 2 - 1, 0)
