@@ -42,7 +42,17 @@ struct TripDetailView: View {
                         headerAspectRatio: photo.aspectRatio,
                         onAdd: addPhoto,
                         canPage: { neighbor($0, of: photo) != nil },
-                        onPage: { if let next = neighbor($0, of: photo) { selectedPhoto = next } }
+                        onPage: { if let next = neighbor($0, of: photo) { selectedPhoto = next } },
+                        neighbor: { step in
+                            neighbor(step, of: photo).map {
+                                PageSnapshot(
+                                    title: $0.takenAt.formatted(date: .abbreviated, time: .shortened),
+                                    image: $0.image,
+                                    aspectRatio: $0.aspectRatio,
+                                    content: AnyView(PhotoMemoView(photo: $0))
+                                )
+                            }
+                        }
                     ) {
                         PhotoMemoView(photo: photo)
                     }

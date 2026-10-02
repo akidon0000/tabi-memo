@@ -9,6 +9,14 @@ struct CustomSheetConfig {
     var expandedImageHeight: CGFloat = 240
 }
 
+/// 前後の写真の見た目。スワイプ中に後ろへ先読みして描く。
+struct PageSnapshot {
+    var title: String
+    var image: Image
+    var aspectRatio: CGFloat
+    var content: AnyView
+}
+
 /// 地図の上に重ねて使う下部パネル。システムのシートではなく自前で描くので、
 /// コンパクト時はバナーと円形の追加ボタンを完全に別のビューとして横並びにできる。
 ///
@@ -29,6 +37,8 @@ struct CustomSheetView<Content: View>: View {
     var canPage: ((Int) -> Bool)?
     /// 前後へ移る。呼び出し側が表示内容(title / headerImage / content)を差し替える。
     var onPage: ((Int) -> Void)?
+    /// 前後の写真の内容(step: 前 -1 / 次 +1)。スワイプ中に後ろへ見せる。
+    var neighbor: ((Int) -> PageSnapshot?)?
     @ViewBuilder var content: Content
 
     private enum Detent {
@@ -43,6 +53,7 @@ struct CustomSheetView<Content: View>: View {
     @State private var pageOpacity: CGFloat = 1
     @State private var pageScale: CGFloat = 1
     @State private var isSwiping = false
+    @State private var peekStep = 1
     @State private var scrollPosition = ScrollPosition(edge: .top)
     /// 指がヘッダーに触れている間 true。揺らしの判定に使う(task から読めるよう @State に写す)。
     @GestureState private var isPressing = false
@@ -175,6 +186,11 @@ struct CustomSheetView<Content: View>: View {
         let headerHeight = headerHeight(progress: progress, fullProgress: fullProgress, compact: heights.compact, imageHeight: expandedImageHeight) + topExtra
 
         return ZStack(alignment: .top) {
+            // 前後の写真を後ろに先読みして出す。スワイプ量に応じて手前へ寄ってくる。
+            if pageOffset != 0, let snap = neighbor?(peekStep) {
+                peekCard(snap, progress: progress, fullProgress: fullProgress, width: expandedImageWidth, topPad: lerp((config.smallestDetentHeight - compactImageSize) / 2, 24 + closeBarHeight * fullProgress, progress) + topExtra)
+            }
+
             ScrollView(.vertical) {
                 content
                     .padding(.top, headerHeight)
@@ -201,6 +217,7 @@ struct CustomSheetView<Content: View>: View {
                         guard abs(w) > 12, abs(w) > abs(h) * 1.5 else { return }
                         isSwiping = true
                     }
+                    peekStep = w < 0 ? 1 : -1
                     // 移れない向き(端)では、抵抗をつけて少ししか動かさない。
                     let hasNeighbor = canPage?(w < 0 ? 1 : -1) == true
                     pageOffset = hasNeighbor ? w : w * 0.3
@@ -344,6 +361,44 @@ struct CustomSheetView<Content: View>: View {
         .frame(height: height, alignment: .top)
     }
 
+    /// 後ろに見せる前後の写真。コンパクトは帯、広がると写真+日時+中身。
+    private func peekCard(_ snap: PageSnapshot, progress: CGFloat, fullProgress: CGFloat, width: CGFloat, topPad: CGFloat) -> some View {
+        let reveal = min(abs(pageOffset) / 160, 1)
+        let imageHeight = lerp(compactImageSize, min(max(width / max(snap.aspectRatio, 0.2), config.expandedImageHeight), 480), progress)
+        let imageWidth = lerp(compactImageSize, width, progress)
+        let compactOpacity = max(1 - progress * 4, 0)
+        let expandedOpacity = max(progress * 2 - 1, 0)
+        return ZStack(alignment: .topLeading) {
+            snap.image
+                .resizable()
+                .scaledToFill()
+                .frame(width: imageWidth, height: imageHeight)
+                .clipShape(RoundedRectangle(cornerRadius: lerp(24, 20, progress)))
+
+            Text(snap.title)
+                .font(.system(size: 16, weight: .bold))
+                .lineLimit(1)
+                .frame(height: compactImageSize, alignment: .center)
+                .padding(.leading, compactImageSize + 12)
+                .opacity(compactOpacity)
+
+            VStack(alignment: .leading, spacing: 12) {
+                Text(snap.title)
+                    .font(.system(size: 24, weight: .bold))
+                    .lineLimit(1)
+                snap.content
+            }
+            .padding(.top, imageHeight + 12)
+            .opacity(expandedOpacity)
+        }
+        .padding(.horizontal, headerPadding)
+        .padding(.top, topPad)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .scaleEffect(0.94 + 0.06 * reveal)
+        .opacity(0.4 + 0.6 * reveal)
+        .allowsHitTesting(false)
+    }
+
     /// 指を離した向きへ飛ばして消し、差し替えた次の写真を手前に入れる。
     private func flingAway(_ step: Int) {
         guard let onPage else { return }
@@ -357,11 +412,9 @@ struct CustomSheetView<Content: View>: View {
             scrollPosition.scrollTo(edge: .top)
             var instant = Transaction()
             instant.disablesAnimations = true
+            // 後ろで見えていた写真と入れ替わるので、そのまま手前に出す(点滅させない)。
             withTransaction(instant) {
                 pageOffset = 0
-                pageScale = 0.9
-            }
-            withAnimation(.spring(duration: 0.35, bounce: 0.2)) {
                 pageOpacity = 1
                 pageScale = 1
             }
