@@ -208,10 +208,12 @@ struct CustomSheetView<Content: View>: View {
 
             header(progress: progress, fullProgress: fullProgress, height: headerHeight, topExtra: topExtra, expandedImageWidth: expandedImageWidth, expandedImageHeight: expandedImageHeight, heights: heights)
         }
-        // 左右スワイプで前後の写真へ。指に追従して傾き、一定以上動かすと飛んでいって次の写真が入る(Tinder 風)。
+        // 左右スワイプで前後の写真へ(全開のみ)。指に追従して傾き、一定以上動かすと飛んでいって次の写真が入る(Tinder 風)。
         .simultaneousGesture(
             DragGesture(minimumDistance: 24, coordinateSpace: .global)
                 .onChanged { value in
+                    // 左右スワイプで写真を移るのは全開のときだけ。
+                    guard detent == .full else { return }
                     let w = value.translation.width, h = value.translation.height
                     if !isSwiping {
                         guard abs(w) > 12, abs(w) > abs(h) * 1.5 else { return }
