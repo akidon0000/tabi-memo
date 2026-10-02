@@ -34,6 +34,7 @@ struct CustomSheetView<Content: View>: View {
     @State private var detent: Detent = .compact
     @GestureState private var dragTranslation: CGFloat = 0
     @State private var scrollOffset: CGFloat = 0
+    @State private var barNudge: CGFloat = 0
 
     private let compactImageSize: CGFloat = 40
     private let headerPadding: CGFloat = 16
@@ -100,12 +101,29 @@ struct CustomSheetView<Content: View>: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+            .task(id: detent) { await runNudgeLoop() }
             // 全開のときは、上のセーフエリア(ステータスバー側)も白にする。
             .overlay(alignment: .top) {
                 Color(.systemBackground)
                     .frame(height: Self.windowSafeAreaTop)
                     .opacity(fullProgress)
                     .allowsHitTesting(false)
+            }
+        }
+    }
+
+    // MARK: - Nudge
+
+    /// 全開の間、一定間隔でバーを下へ揺らして、下にスワイプで畳めることを伝える。
+    private func runNudgeLoop() async {
+        barNudge = 0
+        guard detent == .full else { return }
+        while !Task.isCancelled {
+            try? await Task.sleep(for: .seconds(4))
+            if Task.isCancelled { return }
+            for offset: CGFloat in [10, 2, 8, 0] {
+                withAnimation(.easeOut(duration: 0.12)) { barNudge = offset }
+                try? await Task.sleep(for: .milliseconds(120))
             }
         }
     }
@@ -214,8 +232,9 @@ struct CustomSheetView<Content: View>: View {
             Capsule()
                 .fill(.secondary.opacity(0.6))
                 .frame(width: 36, height: 5)
-                // 全開では×ボタンと同じ行(縦の中心をそろえる)に下げる。
-                .padding(.top, 6 + 14 * fullProgress + topExtra)
+                .padding(.top, 6 + topExtra)
+                // 全開で「下にスワイプできる」ことを知らせるときに、下へ揺らす。
+                .offset(y: barNudge)
         }
         .contentShape(Rectangle())
     }
