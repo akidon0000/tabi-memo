@@ -78,7 +78,16 @@ struct CustomSheetView<Content: View>: View {
             // 全開は上のセーフエリアの下まで。ステータスバー側にはみ出さない。
             let fullHeight = proxy.size.height - Self.windowSafeAreaTop
             let compactHeight = config.smallestDetentHeight
-            let halfHeight = (fullHeight + compactHeight) / 2
+            // ハーフは「写真と日付だけ」の高さにする(メモなどの中身は全開で出す)。
+            let halfImageWidth = proxy.size.width - expandedMargin * 2 - headerPadding * 2
+            let halfCap = max(config.expandedImageHeight, fullHeight * 0.42)
+            let halfOwnImage = min(max(halfImageWidth / max(headerAspectRatio, 0.2), config.expandedImageHeight), halfCap)
+            let halfNextImage: CGFloat = {
+                guard pageOffset != 0, let snap = neighbor?(peekStep) else { return halfOwnImage }
+                return min(max(halfImageWidth / max(snap.aspectRatio, 0.2), config.expandedImageHeight), halfCap)
+            }()
+            let halfImage = lerp(halfOwnImage, halfNextImage, min(abs(pageOffset) / 160, 1))
+            let halfHeight = min(halfImage + 24 + 12 + 12 + 40, fullHeight - 120)
             let baseHeight = height(for: detent, compact: compactHeight, half: halfHeight, full: fullHeight)
             let panelHeight = min(max(baseHeight - dragTranslation, compactHeight), fullHeight)
             // ハーフの高さで 1 になる。
@@ -96,7 +105,6 @@ struct CustomSheetView<Content: View>: View {
             let expandedImageWidth = proxy.size.width - margin * 2 - headerPadding * 2
             // 写真の縦横比どおりの高さにする。ハーフでは見切れない範囲、全開では画面の約6割までに収める。
             let fitHeight = expandedImageWidth / max(headerAspectRatio, 0.2)
-            let halfCap = max(halfHeight - 100, config.expandedImageHeight)
             let fullCap = max(fullHeight * 0.6, halfCap)
             let imageCap = lerp(halfCap, fullCap, fullProgress)
             let ownImageHeight = min(max(fitHeight, config.expandedImageHeight), imageCap)
@@ -211,12 +219,12 @@ struct CustomSheetView<Content: View>: View {
 
             ScrollView(.vertical) {
                 content
-                    .opacity((1 - min(abs(pageOffset) / 160, 1)) * textReveal)
+                    .opacity((1 - min(abs(pageOffset) / 160, 1)) * textReveal * fullProgress)
                     // スワイプ先のメモも、スワイプ中から同じ位置に重ねて、動いた量に応じて濃くする。
                     .overlay(alignment: .top) {
                         if pageOffset != 0, let snap = neighbor?(peekStep) {
                             snap.content
-                                .opacity(min(abs(pageOffset) / 160, 1))
+                                .opacity(min(abs(pageOffset) / 160, 1) * fullProgress)
                                 .allowsHitTesting(false)
                         }
                     }
