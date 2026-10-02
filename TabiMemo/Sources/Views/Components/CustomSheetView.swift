@@ -33,6 +33,8 @@ struct CustomSheetView<Content: View>: View {
     var headerAspectRatio: CGFloat = 1.5
     /// 指定すると、コンパクト時にバナーの右へ円形の追加ボタンを出す。
     var onAdd: (() -> Void)?
+    /// 写真をタップしたとき(ハーフ・全開)。拡大表示を出すのに使う。
+    var onImageTap: (() -> Void)?
     /// 左右スワイプで前後へ移れるか(step: 前 -1 / 次 +1)。nil ならスワイプで移らない。
     var canPage: ((Int) -> Bool)?
     /// 前後へ移る。呼び出し側が表示内容(title / headerImage / content)を差し替える。
@@ -211,6 +213,15 @@ struct CustomSheetView<Content: View>: View {
                 content
                     .opacity((1 - min(abs(pageOffset) / 160, 1)) * textReveal)
                     .padding(.top, headerHeight)
+                    .overlay(alignment: .top) {
+                        // 全開ではヘッダー層がタッチを通すので、写真の位置に透明なタップ領域を置く。
+                        Color.clear
+                            .frame(height: expandedImageHeight)
+                            .contentShape(Rectangle())
+                            .onTapGesture { onImageTap?() }
+                            .padding(.top, 24 + closeBarHeight + topExtra)
+                            .allowsHitTesting(detent == .full)
+                    }
             }
             .scrollPosition($scrollPosition)
             .scrollDisabled(detent != .full)
@@ -319,6 +330,7 @@ struct CustomSheetView<Content: View>: View {
                 .clipShape(RoundedRectangle(cornerRadius: radius))
                 // 左右スワイプで動くのは写真だけ。文字は動かさず、移動が終わってから切り替わる。
                 .modifier(PageCard(offset: pageOffset, opacity: pageOpacity, scale: pageScale))
+                .onTapGesture { if progress > 0.5 { onImageTap?() } }
                 .padding(.top, barHeight)
 
             titleBlock(fontSize: 16)

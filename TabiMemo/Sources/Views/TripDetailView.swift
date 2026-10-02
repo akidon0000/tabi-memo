@@ -7,6 +7,7 @@ struct TripDetailView: View {
     /// パネルに表示中の写真。別のピンをタップしても、パネルは閉じずに中身だけ差し替える。
     @State private var selectedPhoto: TripPhoto?
     @State private var sheetConfig = CustomSheetConfig()
+    @State private var zoomedPhoto: TripPhoto?
 
     var body: some View {
         Map {
@@ -41,6 +42,7 @@ struct TripDetailView: View {
                         headerImage: photo.image,
                         headerAspectRatio: photo.aspectRatio,
                         onAdd: addPhoto,
+                        onImageTap: { zoomedPhoto = photo },
                         canPage: { neighbor($0, of: photo) != nil },
                         onPage: { if let next = neighbor($0, of: photo) { selectedPhoto = next } },
                         neighbor: { step in
@@ -64,6 +66,7 @@ struct TripDetailView: View {
                 }
             }
             .ignoresSafeArea()
+            .fullScreenCover(item: $zoomedPhoto) { PhotoZoomView(photo: $0) }
             .animation(.spring(duration: 0.4), value: selectedPhoto == nil)
         }
     }
@@ -95,6 +98,71 @@ private extension TripDetailView {
         .accessibilityLabel("写真を追加")
         .padding(.trailing, 16)
         .padding(.bottom, 28)
+    }
+}
+
+/// 写真の拡大表示。ピンチで拡大・ダブルタップで切り替え・拡大中はドラッグで移動。下に引くか×で閉じる。
+private struct PhotoZoomView: View {
+    let photo: TripPhoto
+    @Environment(\.dismiss) private var dismiss
+    @State private var scale: CGFloat = 1
+    @State private var baseScale: CGFloat = 1
+    @State private var offset: CGSize = .zero
+    @State private var baseOffset: CGSize = .zero
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(1 - min(max(offset.height, 0) / 600, 0.5)).ignoresSafeArea()
+            photo.image
+                .resizable()
+                .scaledToFit()
+                .scaleEffect(scale)
+                .offset(offset)
+                .gesture(
+                    MagnifyGesture()
+                        .onChanged { scale = max(baseScale * $0.magnification, 1) }
+                        .onEnded { _ in
+                            baseScale = scale
+                            if scale <= 1.01 { reset() }
+                        }
+                )
+                .simultaneousGesture(
+                    DragGesture()
+                        .onChanged { value in
+                            if scale > 1 {
+                                offset = CGSize(width: baseOffset.width + value.translation.width,
+                                                height: baseOffset.height + value.translation.height)
+                            } else {
+                                offset = CGSize(width: 0, height: max(value.translation.height, 0))
+                            }
+                        }
+                        .onEnded { value in
+                            if scale <= 1 {
+                                if value.translation.height > 120 { dismiss() } else { withAnimation(.spring) { offset = .zero } }
+                            } else {
+                                baseOffset = offset
+                            }
+                        }
+                )
+                .onTapGesture(count: 2) {
+                    withAnimation(.spring(duration: 0.3)) {
+                        if scale > 1 { reset() } else { scale = 2.5; baseScale = 2.5 }
+                    }
+                }
+        }
+        .overlay(alignment: .topTrailing) {
+            Button { dismiss() } label: { Image(systemName: "xmark") }
+                .buttonStyle(.glass)
+                .buttonBorderShape(.circle)
+                .padding()
+                .accessibilityLabel("閉じる")
+        }
+    }
+
+    private func reset() {
+        withAnimation(.spring(duration: 0.3)) {
+            scale = 1; baseScale = 1; offset = .zero; baseOffset = .zero
+        }
     }
 }
 
