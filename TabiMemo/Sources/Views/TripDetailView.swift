@@ -65,14 +65,14 @@ private extension TripDetailView {
         Button(action: addPhoto) {
             Image(systemName: "plus")
                 .font(.system(size: 22, weight: .bold))
-                .foregroundStyle(.primary)
-                .frame(width: 56, height: 56)
-                .glassEffect(.regular.tint(.yellow.opacity(0.3)).interactive(), in: .circle)
+                .foregroundStyle(.white)
+                .frame(width: 80, height: 80)
+                .glassEffect(.regular.tint(.blue.opacity(0.6)).interactive(), in: .circle)
         }
         .buttonStyle(.plain)
         .accessibilityLabel("写真を追加")
         .padding(.trailing, 16)
-        .padding(.bottom, 40)
+        .padding(.bottom, 28)
     }
 }
 

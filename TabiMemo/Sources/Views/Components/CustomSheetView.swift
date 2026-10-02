@@ -35,7 +35,8 @@ struct CustomSheetView<Content: View>: View {
 
     private let compactImageSize: CGFloat = 48
     private let headerPadding: CGFloat = 16
-    private let addButtonSize: CGFloat = 56
+    /// 追加ボタンはコンパクトのバナーと同じ高さの円にする。
+    private var addButtonSize: CGFloat { config.smallestDetentHeight }
     private let addButtonGap: CGFloat = 10
     private let compactMargin: CGFloat = 16
     private let expandedMargin: CGFloat = 8
@@ -74,7 +75,7 @@ struct CustomSheetView<Content: View>: View {
                         .allowsHitTesting(progress < 0.1)
                         .frame(maxWidth: .infinity, alignment: .trailing)
                         .padding(.trailing, margin)
-                        .padding(.bottom, bottomMargin + (compactHeight - addButtonSize) / 2)
+                        .padding(.bottom, bottomMargin)
                 }
                 }
             }
@@ -182,9 +183,9 @@ struct CustomSheetView<Content: View>: View {
         Button(action: action) {
             Image(systemName: "plus")
                 .font(.system(size: 22, weight: .bold))
-                .foregroundStyle(.primary)
+                .foregroundStyle(.white)
                 .frame(width: addButtonSize, height: addButtonSize)
-                .glassEffect(.regular.tint(config.headerTint.opacity(0.3)).interactive(), in: .circle)
+                .glassEffect(.regular.tint(.blue.opacity(0.6)).interactive(), in: .circle)
         }
         .buttonStyle(.plain)
         .accessibilityLabel("写真を追加")
