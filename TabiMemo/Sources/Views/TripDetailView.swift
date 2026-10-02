@@ -28,19 +28,6 @@ struct TripDetailView: View {
         }
         .mapStyle(.hybrid())
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                if trip.isActive {
-                    Button("トリップ終了") {
-                        trip.endedAt = .now
-                    }
-                } else {
-                    NavigationLink(value: Route.replay(trip)) {
-                        Label("リプレイ", systemImage: "play.circle")
-                    }
-                }
-            }
-        }
         .sheet(item: $selectedPhoto) { photo in
             PhotoDetailSheet(photo: photo)
                 .presentationDetents([.medium, .large])

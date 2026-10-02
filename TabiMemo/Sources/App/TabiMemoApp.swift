@@ -18,8 +18,23 @@ struct TabiMemoApp: App {
 
     var body: some Scene {
         WindowGroup {
-            TripListView()
+            MapRootView()
         }
         .modelContainer(modelContainer)
+    }
+}
+
+/// 地図画面だけを確認するための暫定ルート。軌跡のある最新のトリップを開く。
+private struct MapRootView: View {
+    @Query(sort: \Trip.startedAt, order: .reverse) private var trips: [Trip]
+
+    var body: some View {
+        NavigationStack {
+            if let trip = trips.first(where: { !$0.locationPoints.isEmpty }) {
+                TripDetailView(trip: trip)
+            } else {
+                ContentUnavailableView("トリップがありません", systemImage: "map")
+            }
+        }
     }
 }
