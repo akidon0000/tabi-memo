@@ -21,6 +21,8 @@ struct CustomSheetView<Content: View>: View {
     var title: String
     var caption: String
     var headerImage: Image
+    /// ヘッダー画像の幅 / 高さ。縦長の写真は 1 より小さい値で、広がったときに高さを確保する。
+    var headerAspectRatio: CGFloat = 1.5
     /// 指定すると、コンパクト時にバナーの右へ円形の追加ボタンを出す。
     var onAdd: (() -> Void)?
     @ViewBuilder var content: Content
@@ -64,6 +66,12 @@ struct CustomSheetView<Content: View>: View {
             let reserve = onAdd == nil ? 0 : (addButtonSize + addButtonGap) * max(1 - progress * 3, 0)
             let panelWidth = proxy.size.width - margin * 2 - reserve
             let expandedImageWidth = proxy.size.width - margin * 2 - headerPadding * 2
+            // 写真の縦横比どおりの高さにする。ハーフでは見切れない範囲、全開では画面の約6割までに収める。
+            let fitHeight = expandedImageWidth / max(headerAspectRatio, 0.2)
+            let halfCap = max(halfHeight - 100, config.expandedImageHeight)
+            let fullCap = max(fullHeight * 0.6, halfCap)
+            let imageCap = lerp(halfCap, fullCap, fullProgress)
+            let expandedImageHeight = min(max(fitHeight, config.expandedImageHeight), imageCap)
 
             ZStack(alignment: .bottomLeading) {
                 panel(
@@ -73,6 +81,7 @@ struct CustomSheetView<Content: View>: View {
                     height: panelHeight,
                     width: panelWidth,
                     expandedImageWidth: expandedImageWidth,
+                    expandedImageHeight: expandedImageHeight,
                     heights: (compactHeight, halfHeight, fullHeight)
                 )
                 .padding(.leading, margin)
@@ -110,9 +119,10 @@ struct CustomSheetView<Content: View>: View {
         height: CGFloat,
         width: CGFloat,
         expandedImageWidth: CGFloat,
+        expandedImageHeight: CGFloat,
         heights: (compact: CGFloat, half: CGFloat, full: CGFloat)
     ) -> some View {
-        let headerHeight = headerHeight(progress: progress, fullProgress: fullProgress, compact: heights.compact) + topExtra
+        let headerHeight = headerHeight(progress: progress, fullProgress: fullProgress, compact: heights.compact, imageHeight: expandedImageHeight) + topExtra
 
         return ZStack(alignment: .top) {
             ScrollView(.vertical) {
@@ -128,7 +138,7 @@ struct CustomSheetView<Content: View>: View {
                 scrollOffset = newValue
             }
 
-            header(progress: progress, fullProgress: fullProgress, height: headerHeight, topExtra: topExtra, expandedImageWidth: expandedImageWidth)
+            header(progress: progress, fullProgress: fullProgress, height: headerHeight, topExtra: topExtra, expandedImageWidth: expandedImageWidth, expandedImageHeight: expandedImageHeight)
                 .gesture(dragGesture(heights: heights))
         }
         .frame(width: width, height: height, alignment: .top)
@@ -157,10 +167,10 @@ struct CustomSheetView<Content: View>: View {
 
     // MARK: - Header
 
-    private func header(progress: CGFloat, fullProgress: CGFloat, height: CGFloat, topExtra: CGFloat, expandedImageWidth: CGFloat) -> some View {
+    private func header(progress: CGFloat, fullProgress: CGFloat, height: CGFloat, topExtra: CGFloat, expandedImageWidth: CGFloat, expandedImageHeight: CGFloat) -> some View {
         // 全開後のスクロール量で、画像を最大で半分まで縮める。
         let collapse = min(scrollOffset / 120, 1) * progress
-        let imageHeight = lerp(compactImageSize, config.expandedImageHeight * (1 - 0.5 * collapse), progress)
+        let imageHeight = lerp(compactImageSize, expandedImageHeight * (1 - 0.5 * collapse), progress)
         let imageWidth = lerp(compactImageSize, expandedImageWidth, progress)
         // 写真の角は、パネルの角に同心(パネルの半径 - 写真までの余白)。全開ではパネルの角が消えるので 20 に寄せる。
         let inset = lerp((config.smallestDetentHeight - compactImageSize) / 2, headerPadding, progress)
@@ -282,9 +292,9 @@ struct CustomSheetView<Content: View>: View {
         }
     }
 
-    private func headerHeight(progress: CGFloat, fullProgress: CGFloat, compact: CGFloat) -> CGFloat {
+    private func headerHeight(progress: CGFloat, fullProgress: CGFloat, compact: CGFloat, imageHeight: CGFloat) -> CGFloat {
         let collapse = min(scrollOffset / 120, 1) * progress
-        let expanded = closeBarHeight * fullProgress + config.expandedImageHeight * (1 - 0.5 * collapse) + 24 + 12 + 12 + 40
+        let expanded = closeBarHeight * fullProgress + imageHeight * (1 - 0.5 * collapse) + 24 + 12 + 12 + 40
         return lerp(compact, expanded, progress)
     }
 

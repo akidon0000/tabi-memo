@@ -39,6 +39,7 @@ struct TripDetailView: View {
                         title: photo.takenAt.formatted(date: .abbreviated, time: .shortened),
                         caption: photo.isLocationManuallyPlaced ? "位置は手動で指定されました" : "",
                         headerImage: photo.image,
+                        headerAspectRatio: photo.aspectRatio,
                         onAdd: addPhoto
                     ) {
                         EmptyView()
@@ -78,6 +79,12 @@ private extension TripDetailView {
 }
 
 extension TripPhoto {
+    /// 幅 / 高さ。画像が読めないときは横長(3:2)として扱う。
+    var aspectRatio: CGFloat {
+        guard let size = UIImage(data: imageData)?.size, size.height > 0 else { return 1.5 }
+        return size.width / size.height
+    }
+
     var image: Image {
         UIImage(data: imageData).map(Image.init(uiImage:)) ?? Image(systemName: "photo")
     }

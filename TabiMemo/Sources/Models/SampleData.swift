@@ -45,15 +45,16 @@ enum SampleData {
             point.trip = trip
         }
 
-        let photoSpecs: [(waypointIndex: Int, offsetMinutes: Double, color: UIColor, label: String)] = [
-            (0, 0, .systemBlue, "渋谷駅"),
-            (3, 20, .systemGreen, "代々木公園入口"),
-            (6, 40, .systemOrange, "公園のベンチ"),
+        let photoSpecs: [(waypointIndex: Int, offsetMinutes: Double, color: UIColor, label: String, size: CGSize)] = [
+            (0, 0, .systemBlue, "渋谷駅", CGSize(width: 600, height: 600)),
+            (3, 20, .systemGreen, "代々木公園入口", CGSize(width: 800, height: 600)),
+            // 縦どりの写真。
+            (6, 40, .systemOrange, "公園のベンチ", CGSize(width: 600, height: 800)),
         ]
         for spec in photoSpecs {
             let waypoint = waypoints[spec.waypointIndex]
             let photo = TripPhoto(
-                imageData: placeholderImage(color: spec.color, label: spec.label),
+                imageData: placeholderImage(color: spec.color, label: spec.label, size: spec.size),
                 latitude: waypoint.lat,
                 longitude: waypoint.lon,
                 takenAt: start.addingTimeInterval(spec.offsetMinutes * 60)
@@ -65,8 +66,7 @@ enum SampleData {
     }
 
     /// Solid-color placeholder photo so the demo doesn't depend on bundled image assets.
-    private static func placeholderImage(color: UIColor, label: String) -> Data {
-        let size = CGSize(width: 600, height: 600)
+    private static func placeholderImage(color: UIColor, label: String, size: CGSize) -> Data {
         let renderer = UIGraphicsImageRenderer(size: size)
         let image = renderer.image { _ in
             color.setFill()
