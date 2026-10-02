@@ -66,9 +66,17 @@ struct TripDetailView: View {
                 }
             }
             .ignoresSafeArea()
-            .fullScreenCover(item: $zoomedPhoto) { PhotoZoomView(photo: $0) }
             .animation(.spring(duration: 0.4), value: selectedPhoto == nil)
         }
+        // 拡大表示は下からせり上げず、後ろからふわっと(薄い・小さい状態から)出す。
+        .overlay {
+            if let photo = zoomedPhoto {
+                PhotoZoomView(photo: photo) { zoomedPhoto = nil }
+                    .transition(.opacity.combined(with: .scale(scale: 0.92)))
+                    .zIndex(1)
+            }
+        }
+        .animation(.easeOut(duration: 0.3), value: zoomedPhoto?.id)
     }
 
     /// 撮影順で隣の写真(step: 前 -1 / 次 +1)。端なら nil。
@@ -104,7 +112,7 @@ private extension TripDetailView {
 /// 写真の拡大表示。ピンチで拡大・ダブルタップで切り替え・拡大中はドラッグで移動。下に引くか×で閉じる。
 private struct PhotoZoomView: View {
     let photo: TripPhoto
-    @Environment(\.dismiss) private var dismiss
+    var dismiss: () -> Void
     @State private var scale: CGFloat = 1
     @State private var baseScale: CGFloat = 1
     @State private var offset: CGSize = .zero
