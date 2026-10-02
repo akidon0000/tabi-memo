@@ -5,6 +5,7 @@ import SwiftUI
 struct TripDetailView: View {
     @Bindable var trip: Trip
     @State private var selectedPhoto: TripPhoto?
+    @State private var sheetConfig = CustomSheetConfig()
 
     var body: some View {
         Map {
@@ -29,74 +30,20 @@ struct TripDetailView: View {
         .mapStyle(.hybrid())
         .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $selectedPhoto) { photo in
-            PhotoDetailSheet(photo: photo)
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
+            CustomSheetView(
+                config: $sheetConfig,
+                title: photo.takenAt.formatted(date: .abbreviated, time: .shortened),
+                caption: photo.isLocationManuallyPlaced ? "位置は手動で指定されました" : "",
+                headerImage: photo.image
+            ) {
+                EmptyView()
+            }
         }
     }
 }
 
-/// 写真ピンをタップしたときに開く詳細シート。
-/// 写真をヘッダーとして上端いっぱいに敷き、スクロールに応じて視差で動き、引っ張ると伸びる。
-private struct PhotoDetailSheet: View {
-    let photo: TripPhoto
-    @Environment(\.dismiss) private var dismiss
-
-    private let headerHeight: CGFloat = 320
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 12) {
-                header
-                VStack(alignment: .leading, spacing: 12) {
-                    Text(photo.takenAt.formatted(date: .abbreviated, time: .shortened))
-                        .font(.title3.bold())
-                    if photo.isLocationManuallyPlaced {
-                        Label("位置は手動で指定されました", systemImage: "hand.tap")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .padding(.horizontal)
-                .padding(.bottom)
-            }
-        }
-        .ignoresSafeArea(edges: .top)
-        .overlay(alignment: .topTrailing) {
-            Button {
-                dismiss()
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(.white)
-                    .frame(width: 32, height: 32)
-                    .background(.black.opacity(0.45), in: .circle)
-            }
-            .accessibilityLabel("閉じる")
-            .padding(.top, 16)
-            .padding(.trailing, 16)
-        }
-    }
-
-    private var header: some View {
-        GeometryReader { proxy in
-            let minY = proxy.frame(in: .scrollView).minY
-            // 下に引っ張ったら伸ばし、上にスクロールしたら半分の速さで追従させる(視差)。
-            let stretch = max(minY, 0)
-            let parallax = minY < 0 ? -minY * 0.5 : 0
-            Group {
-                if let uiImage = UIImage(data: photo.imageData) {
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .scaledToFill()
-                } else {
-                    Color.secondary.opacity(0.3)
-                }
-            }
-            .frame(width: proxy.size.width, height: headerHeight + stretch)
-            .clipped()
-            .offset(y: -stretch + parallax)
-        }
-        .frame(height: headerHeight)
+extension TripPhoto {
+    var image: Image {
+        UIImage(data: imageData).map(Image.init(uiImage:)) ?? Image(systemName: "photo")
     }
 }
