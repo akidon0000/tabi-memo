@@ -104,9 +104,12 @@ struct CustomSheetView<Content: View>: View {
                 .padding(.top, imageHeight + 12)
                 .opacity(expandedOpacity)
 
+            // コンパクトでは非表示。ヘッダーが開くにつれて現れる。
             closeButton
                 .frame(maxWidth: .infinity, alignment: .trailing)
-                .offset(y: lerp(8, 8, progress))
+                .offset(y: 8)
+                .opacity(progress)
+                .allowsHitTesting(progress > 0.5)
         }
         .padding(.horizontal, horizontalPadding)
         .padding(.top, lerp(16, 24, progress))

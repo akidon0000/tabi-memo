@@ -4,7 +4,8 @@ import SwiftUI
 
 struct TripDetailView: View {
     @Bindable var trip: Trip
-    @State private var selectedPhoto: TripPhoto?
+    /// シートに表示中の写真。別のピンをタップしても、シートは閉じずに中身だけ差し替える。
+    @State private var sheetItem: PhotoSheetItem?
     @State private var sheetConfig = CustomSheetConfig()
 
     var body: some View {
@@ -22,7 +23,7 @@ struct TripDetailView: View {
                     anchor: .bottom
                 ) {
                     PhotoPinCallout(photo: photo) {
-                        selectedPhoto = photo
+                        sheetItem = PhotoSheetItem(photo: photo)
                     }
                 }
             }
@@ -34,7 +35,8 @@ struct TripDetailView: View {
             sheetConfig.largestDetentHeight = newValue.height - 10
         }
         .navigationBarTitleDisplayMode(.inline)
-        .sheet(item: $selectedPhoto) { photo in
+        .sheet(item: $sheetItem) { item in
+            let photo = item.photo
             CustomSheetView(
                 config: $sheetConfig,
                 title: photo.takenAt.formatted(date: .abbreviated, time: .shortened),
@@ -45,6 +47,12 @@ struct TripDetailView: View {
             }
         }
     }
+}
+
+/// id を固定して、写真が変わってもシートを作り直さず中身だけ差し替えるためのラッパー。
+private struct PhotoSheetItem: Identifiable {
+    let id = "photo-sheet"
+    let photo: TripPhoto
 }
 
 extension TripPhoto {
