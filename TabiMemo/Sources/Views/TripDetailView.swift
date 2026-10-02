@@ -41,10 +41,7 @@ struct TripDetailView: View {
                 config: $sheetConfig,
                 title: photo.takenAt.formatted(date: .abbreviated, time: .shortened),
                 caption: photo.isLocationManuallyPlaced ? "位置は手動で指定されました" : "",
-                headerImage: photo.image,
-                onAdd: {
-                    // TODO: 写真の追加(未実装)
-                }
+                headerImage: photo.image
             ) {
                 EmptyView()
             }

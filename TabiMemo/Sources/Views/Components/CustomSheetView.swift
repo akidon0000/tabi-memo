@@ -14,8 +14,6 @@ struct CustomSheetView<Content: View>: View {
     var title: String
     var caption: String
     var headerImage: Image
-    /// 指定すると、コンパクト時にバナーの右(枠の外)へ円形の追加ボタンを出す。ヘッダーが開くと消える。
-    var onAdd: (() -> Void)?
     @ViewBuilder var content: Content
 
     @State private var sheetHeight: CGFloat = 0
@@ -28,21 +26,17 @@ struct CustomSheetView<Content: View>: View {
         title: String,
         caption: String,
         headerImage: Image,
-        onAdd: (() -> Void)? = nil,
         @ViewBuilder content: () -> Content
     ) {
         _config = config
         self.title = title
         self.caption = caption
         self.headerImage = headerImage
-        self.onAdd = onAdd
         self.content = content()
     }
 
     private let compactImageSize: CGFloat = 48
     private let horizontalPadding: CGFloat = 16
-    private let addButtonSize: CGFloat = 56
-    private let addButtonGap: CGFloat = 10
 
     var body: some View {
         GeometryReader { proxy in
@@ -54,8 +48,6 @@ struct CustomSheetView<Content: View>: View {
                     content
                         .padding(.top, headerHeight)
                 }
-                // シート自体の背景は透明にしてあるので、開くにつれて中身の背景を出す。
-                .background(Color(.systemBackground).opacity(min(progress * 4, 1)))
                 .onScrollGeometryChange(for: CGFloat.self) { geometry in
                     max(geometry.contentOffset.y + geometry.contentInsets.top, 0)
                 } action: { _, newValue in
@@ -69,7 +61,6 @@ struct CustomSheetView<Content: View>: View {
             }
         }
         .presentationDetents([smallestDetent, centerDetent, largestDetent], selection: detentSelection)
-        .presentationBackground(.clear)
         .presentationDragIndicator(.visible)
         .presentationBackgroundInteraction(.enabled(upThrough: centerDetent))
         .interactiveDismissDisabled()
@@ -94,9 +85,6 @@ struct CustomSheetView<Content: View>: View {
         // 畳み側と展開側のタイトルを重ならないようにクロスフェードする。
         let compactOpacity = max(1 - progress * 4, 0)
         let expandedOpacity = max(progress * 2 - 1, 0)
-        // 追加ボタンの分だけバナーを左に縮める。ヘッダーが開くにつれて 0 に戻る。
-        let reserve = onAdd == nil ? 0 : (addButtonSize + addButtonGap) * max(1 - progress * 3, 0)
-        let addOpacity = max(1 - progress * 4, 0)
 
         return ZStack(alignment: .topLeading) {
             headerImage
@@ -108,57 +96,24 @@ struct CustomSheetView<Content: View>: View {
             titleBlock(fontSize: 16)
                 .frame(height: compactImageSize, alignment: .center)
                 .padding(.leading, compactImageSize + 12)
-                .padding(.trailing, 12)
+                .padding(.trailing, 44)
                 .opacity(compactOpacity)
 
             titleBlock(fontSize: 24)
                 .padding(.top, imageHeight + 12)
                 .opacity(expandedOpacity)
+
         }
-        .padding(.leading, horizontalPadding)
-        .padding(.trailing, horizontalPadding + reserve)
+        .padding(.horizontal, horizontalPadding)
         .padding(.top, lerp(16, 24, progress))
         .frame(maxWidth: .infinity, minHeight: height, maxHeight: height, alignment: .topLeading)
         .background(alignment: .top) {
             // 畳んだ状態ではシート下端(ホームインジケーター側)までヘッダーの色で埋める。
-            // 畳むと全体が丸いバナー、開くと上の角だけ丸いヘッダーになる。
-            let corner = lerp(40, 36, progress)
-            UnevenRoundedRectangle(
-                topLeadingRadius: corner,
-                bottomLeadingRadius: lerp(40, 0, progress),
-                bottomTrailingRadius: lerp(40, 0, progress),
-                topTrailingRadius: corner
-            )
-            .fill(config.headerTint.opacity(0.25 + 0.15 * progress))
-            .background(.regularMaterial, in: UnevenRoundedRectangle(
-                topLeadingRadius: corner,
-                bottomLeadingRadius: lerp(40, 0, progress),
-                bottomTrailingRadius: lerp(40, 0, progress),
-                topTrailingRadius: corner
-            ))
-            .padding(.trailing, reserve)
-            .padding(.bottom, -bottomInset * (1 - progress))
+            config.headerTint
+                .opacity(0.25 + 0.15 * progress)
+                .background(.regularMaterial)
+                .padding(.bottom, -bottomInset * (1 - progress))
         }
-        .overlay(alignment: .topTrailing) {
-            if let onAdd {
-                addButton(action: onAdd)
-                    .opacity(addOpacity)
-                    .allowsHitTesting(addOpacity > 0.5)
-                    .padding(.top, (height - addButtonSize) / 2)
-            }
-        }
-    }
-
-    private func addButton(action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: "plus")
-                .font(.system(size: 22, weight: .bold))
-                .foregroundStyle(.primary)
-                .frame(width: addButtonSize, height: addButtonSize)
-                .background(config.headerTint.opacity(0.25), in: .circle)
-                .background(.regularMaterial, in: .circle)
-        }
-        .accessibilityLabel("写真を追加")
     }
 
     private func titleBlock(fontSize: CGFloat) -> some View {
