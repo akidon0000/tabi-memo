@@ -30,6 +30,7 @@ struct TripDetailView: View {
         }
         .mapStyle(.hybrid())
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .navigationBar)
         .overlay {
             ZStack {
                 if let photo = selectedPhoto {
@@ -49,7 +50,7 @@ struct TripDetailView: View {
                         .transition(.opacity)
                 }
             }
-            .ignoresSafeArea(edges: .bottom)
+            .ignoresSafeArea()
             .animation(.spring(duration: 0.4), value: selectedPhoto == nil)
         }
     }

@@ -43,8 +43,8 @@ struct CustomSheetView<Content: View>: View {
 
     var body: some View {
         GeometryReader { proxy in
-            // proxy は上のセーフエリア(ナビバー)の下から始まるので、上端は引かない。
-            let fullHeight = proxy.size.height - 8
+            // 全開は上のセーフエリアの下まで。ステータスバー側にはみ出さない。
+            let fullHeight = proxy.size.height - Self.windowSafeAreaTop
             let compactHeight = config.smallestDetentHeight
             let halfHeight = (fullHeight + compactHeight) / 2
             let baseHeight = height(for: detent, compact: compactHeight, half: halfHeight, full: fullHeight)
@@ -54,17 +54,21 @@ struct CustomSheetView<Content: View>: View {
             // ハーフ→全開で 0 → 1。全開に近づくほど中身の背景を白くする。
             let fullProgress = min(max((panelHeight - halfHeight) / (fullHeight - halfHeight), 0), 1)
 
-            let margin = lerp(compactMargin, expandedMargin, progress)
-            let bottomMargin = lerp(28, 8, progress)
+            // 全開に近づくほど余白と角丸をなくして、画面いっぱいにする。
+            let edge = 1 - fullProgress
+            let topExtra: CGFloat = 0
+            let margin = lerp(compactMargin, expandedMargin, progress) * edge
+            let bottomMargin = lerp(28, 8, progress) * edge
             let reserve = onAdd == nil ? 0 : (addButtonSize + addButtonGap) * max(1 - progress * 3, 0)
             let panelWidth = proxy.size.width - margin * 2 - reserve
-            let expandedImageWidth = proxy.size.width - expandedMargin * 2 - headerPadding * 2
+            let expandedImageWidth = proxy.size.width - margin * 2 - headerPadding * 2
 
             GlassEffectContainer(spacing: 4) {
                 ZStack(alignment: .bottomLeading) {
                 panel(
                     progress: progress,
                     fullProgress: fullProgress,
+                    topExtra: topExtra,
                     height: panelHeight,
                     width: panelWidth,
                     expandedImageWidth: expandedImageWidth,
@@ -91,12 +95,13 @@ struct CustomSheetView<Content: View>: View {
     private func panel(
         progress: CGFloat,
         fullProgress: CGFloat,
+        topExtra: CGFloat,
         height: CGFloat,
         width: CGFloat,
         expandedImageWidth: CGFloat,
         heights: (compact: CGFloat, half: CGFloat, full: CGFloat)
     ) -> some View {
-        let headerHeight = headerHeight(progress: progress, compact: heights.compact)
+        let headerHeight = headerHeight(progress: progress, compact: heights.compact) + topExtra
 
         return ZStack(alignment: .top) {
             ScrollView(.vertical) {
@@ -112,27 +117,27 @@ struct CustomSheetView<Content: View>: View {
                 scrollOffset = newValue
             }
 
-            header(progress: progress, height: headerHeight, expandedImageWidth: expandedImageWidth)
+            header(progress: progress, height: headerHeight, topExtra: topExtra, expandedImageWidth: expandedImageWidth)
                 .gesture(dragGesture(heights: heights))
         }
         .frame(width: width, height: height, alignment: .top)
-        .clipShape(panelShape(progress: progress))
+        .clipShape(panelShape(progress: progress, edge: 1 - fullProgress))
         // Liquid Glass。ヘッダーの色を tint として乗せる。
-        .glassEffect(.regular.tint(config.headerTint.opacity(0.3)), in: panelShape(progress: progress))
+        .glassEffect(.regular.tint(config.headerTint.opacity(0.3)), in: panelShape(progress: progress, edge: 1 - fullProgress))
     }
 
-    private func panelShape(progress: CGFloat) -> UnevenRoundedRectangle {
+    private func panelShape(progress: CGFloat, edge: CGFloat) -> UnevenRoundedRectangle {
         UnevenRoundedRectangle(
-            topLeadingRadius: lerp(40, 36, progress),
-            bottomLeadingRadius: 40,
-            bottomTrailingRadius: 40,
-            topTrailingRadius: lerp(40, 36, progress)
+            topLeadingRadius: lerp(40, 36, progress) * edge,
+            bottomLeadingRadius: 40 * edge,
+            bottomTrailingRadius: 40 * edge,
+            topTrailingRadius: lerp(40, 36, progress) * edge
         )
     }
 
     // MARK: - Header
 
-    private func header(progress: CGFloat, height: CGFloat, expandedImageWidth: CGFloat) -> some View {
+    private func header(progress: CGFloat, height: CGFloat, topExtra: CGFloat, expandedImageWidth: CGFloat) -> some View {
         // 全開後のスクロール量で、画像を最大で半分まで縮める。
         let collapse = min(scrollOffset / 120, 1) * progress
         let imageHeight = lerp(compactImageSize, config.expandedImageHeight * (1 - 0.5 * collapse), progress)
@@ -159,13 +164,13 @@ struct CustomSheetView<Content: View>: View {
                 .opacity(expandedOpacity)
         }
         .padding(.horizontal, headerPadding)
-        .padding(.top, lerp((config.smallestDetentHeight - compactImageSize) / 2, 24, progress))
+        .padding(.top, lerp((config.smallestDetentHeight - compactImageSize) / 2, 24, progress) + topExtra)
         .frame(maxWidth: .infinity, minHeight: height, maxHeight: height, alignment: .topLeading)
         .overlay(alignment: .top) {
             Capsule()
                 .fill(.secondary.opacity(0.6))
                 .frame(width: 36, height: 5)
-                .padding(.top, 6)
+                .padding(.top, 6 + topExtra)
         }
         .contentShape(Rectangle())
     }
@@ -199,7 +204,7 @@ struct CustomSheetView<Content: View>: View {
     // MARK: - Dragging
 
     private func dragGesture(heights: (compact: CGFloat, half: CGFloat, full: CGFloat)) -> some Gesture {
-        DragGesture()
+        DragGesture(coordinateSpace: .global)
             .updating($dragTranslation) { value, state, _ in
                 state = value.translation.height
             }
@@ -233,6 +238,13 @@ struct CustomSheetView<Content: View>: View {
         let collapse = min(scrollOffset / 120, 1) * progress
         let expanded = config.expandedImageHeight * (1 - 0.5 * collapse) + 24 + 12 + 12 + 40
         return lerp(compact, expanded, progress)
+    }
+
+    /// 親が ignoresSafeArea() のため proxy からは取れないので、ウィンドウから読む。
+    private static var windowSafeAreaTop: CGFloat {
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first?.keyWindow?.safeAreaInsets.top ?? 0
     }
 
     private func lerp(_ from: CGFloat, _ to: CGFloat, _ t: CGFloat) -> CGFloat {
