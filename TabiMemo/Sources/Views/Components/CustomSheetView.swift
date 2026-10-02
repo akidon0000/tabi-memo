@@ -137,12 +137,16 @@ struct CustomSheetView<Content: View>: View {
         .glassEffect(.regular.tint(config.headerTint.opacity(0.3)), in: panelShape(progress: progress, edge: 1 - fullProgress))
     }
 
+    /// コンパクトはカプセル、広がるにつれて端末の画面角に同心の丸みへ移る。全開では角丸なし。
     private func panelShape(progress: CGFloat, edge: CGFloat) -> UnevenRoundedRectangle {
-        UnevenRoundedRectangle(
-            topLeadingRadius: lerp(40, 36, progress) * edge,
-            bottomLeadingRadius: 40 * edge,
-            bottomTrailingRadius: 40 * edge,
-            topTrailingRadius: lerp(40, 36, progress) * edge
+        let capsule = config.smallestDetentHeight / 2
+        let concentric = max(Self.deviceCornerRadius - expandedMargin, 0)
+        let radius = lerp(capsule, concentric, progress) * edge
+        return UnevenRoundedRectangle(
+            topLeadingRadius: radius,
+            bottomLeadingRadius: radius,
+            bottomTrailingRadius: radius,
+            topTrailingRadius: radius
         )
     }
 
@@ -281,6 +285,15 @@ struct CustomSheetView<Content: View>: View {
         UIApplication.shared.connectedScenes
             .compactMap { $0 as? UIWindowScene }
             .first?.keyWindow?.safeAreaInsets.top ?? 0
+    }
+
+    /// 端末の画面角の半径。公開 API が無いため、取れなければ近い値を使う。
+    private static var deviceCornerRadius: CGFloat {
+        let screen = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first?.screen
+        let value = (screen?.value(forKey: "_displayCornerRadius") as? CGFloat) ?? 0
+        return value > 0 ? value : 55
     }
 
     private func lerp(_ from: CGFloat, _ to: CGFloat, _ t: CGFloat) -> CGFloat {
