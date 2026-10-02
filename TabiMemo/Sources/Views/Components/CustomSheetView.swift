@@ -35,6 +35,9 @@ struct CustomSheetView<Content: View>: View {
     @GestureState private var dragTranslation: CGFloat = 0
     @State private var scrollOffset: CGFloat = 0
     @State private var barNudge: CGFloat = 0
+    /// 指がヘッダーに触れている間 true。揺らしの判定に使う(task から読めるよう @State に写す)。
+    @GestureState private var isPressing = false
+    @State private var isTouching = false
 
     private let compactImageSize: CGFloat = 40
     private let headerPadding: CGFloat = 16
@@ -102,6 +105,10 @@ struct CustomSheetView<Content: View>: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
             .task(id: detent) { await runNudgeLoop() }
+            .onChange(of: isPressing) { _, pressing in
+                isTouching = pressing
+                if pressing { withAnimation(.easeOut(duration: 0.1)) { barNudge = 0 } }
+            }
             // 全開のときは、上のセーフエリア(ステータスバー側)も白にする。
             .overlay(alignment: .top) {
                 Color(.systemBackground)
@@ -110,6 +117,19 @@ struct CustomSheetView<Content: View>: View {
                     .allowsHitTesting(false)
             }
         }
+    }
+
+    // MARK: - Detent
+
+    /// バーのタップ: コンパクト → ハーフ → 全開。全開では何もしない(畳むのは×やドラッグ)。
+    private func advanceDetent() {
+        let next: Detent? = switch detent {
+        case .compact: .half
+        case .half: .full
+        case .full: nil
+        }
+        guard let next else { return }
+        withAnimation(.spring(duration: 0.4, bounce: 0.15)) { detent = next }
     }
 
     // MARK: - Nudge
@@ -121,7 +141,10 @@ struct CustomSheetView<Content: View>: View {
         while !Task.isCancelled {
             try? await Task.sleep(for: .seconds(4))
             if Task.isCancelled { return }
+            // 指で触れている間は揺らさない。
+            if isTouching { continue }
             for offset: CGFloat in [10, 2, 8, 0] {
+                if isTouching { break }
                 withAnimation(.easeOut(duration: 0.12)) { barNudge = offset }
                 try? await Task.sleep(for: .milliseconds(120))
             }
@@ -158,6 +181,10 @@ struct CustomSheetView<Content: View>: View {
 
             header(progress: progress, fullProgress: fullProgress, height: headerHeight, topExtra: topExtra, expandedImageWidth: expandedImageWidth, expandedImageHeight: expandedImageHeight)
                 .gesture(dragGesture(heights: heights))
+                .simultaneousGesture(
+                    DragGesture(minimumDistance: 0, coordinateSpace: .global)
+                        .updating($isPressing) { _, state, _ in state = true }
+                )
         }
         .frame(width: width, height: height, alignment: .top)
         .clipShape(panelShape(progress: progress, edge: 1 - fullProgress))
@@ -232,7 +259,11 @@ struct CustomSheetView<Content: View>: View {
             Capsule()
                 .fill(.secondary.opacity(0.6))
                 .frame(width: 36, height: 5)
-                .padding(.top, 6 + topExtra)
+                // タップしやすいよう当たり判定を広げる。見た目の位置は変えない。
+                .frame(width: 96, height: 28)
+                .contentShape(Rectangle())
+                .onTapGesture { advanceDetent() }
+                .padding(.top, 6 + topExtra - 11.5)
                 // 全開で「下にスワイプできる」ことを知らせるときに、下へ揺らす。
                 .offset(y: barNudge)
         }
