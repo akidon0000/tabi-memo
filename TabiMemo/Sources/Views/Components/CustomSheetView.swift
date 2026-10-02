@@ -1,87 +1,130 @@
 import SwiftUI
 
-/// Config
+/// `CustomSheetView` の見た目を決める設定。
 struct CustomSheetConfig {
-    var headerCornerRadius: CGFloat = 20
     var headerTint: Color = .yellow
-    var largestDetentHeight: CGFloat = .infinity
+    /// 一番小さく畳んだとき(コンパクト)のパネルの高さ。
     var smallestDetentHeight: CGFloat = 80
+    /// ハーフ以上のときのヘッダー画像の高さ。
     var expandedImageHeight: CGFloat = 240
 }
 
+/// 地図の上に重ねて使う下部パネル。システムのシートではなく自前で描くので、
+/// コンパクト時はバナーと円形の追加ボタンを完全に別のビューとして横並びにできる。
+///
+/// - コンパクト → ハーフ → 全開の3段階に、ヘッダーのドラッグで吸着する。
+/// - ヘッダーはパネルの高さに連動して変形する。ハーフの高さで、すでにヘッダー画像が全開になる。
+/// - 全開後のスクロールでは、ヘッダー画像が縮む。
+/// - 追加ボタンはコンパクトのときだけバナーの右に出て、開くと消える。
 struct CustomSheetView<Content: View>: View {
     @Binding var config: CustomSheetConfig
     var title: String
     var caption: String
     var headerImage: Image
+    /// 指定すると、コンパクト時にバナーの右へ円形の追加ボタンを出す。
+    var onAdd: (() -> Void)?
     @ViewBuilder var content: Content
 
-    @State private var sheetHeight: CGFloat = 0
-    /// nil の間は常にコンパクト(最新の config から計算)を選択扱いにする。
-    @State private var selectedDetent: PresentationDetent?
-    @State private var scrollOffset: CGFloat = 0
-
-    init(
-        config: Binding<CustomSheetConfig>,
-        title: String,
-        caption: String,
-        headerImage: Image,
-        @ViewBuilder content: () -> Content
-    ) {
-        _config = config
-        self.title = title
-        self.caption = caption
-        self.headerImage = headerImage
-        self.content = content()
+    private enum Detent {
+        case compact, half, full
     }
 
+    @State private var detent: Detent = .compact
+    @GestureState private var dragTranslation: CGFloat = 0
+    @State private var scrollOffset: CGFloat = 0
+
     private let compactImageSize: CGFloat = 48
-    private let horizontalPadding: CGFloat = 16
+    private let headerPadding: CGFloat = 16
+    private let addButtonSize: CGFloat = 56
+    private let addButtonGap: CGFloat = 10
+    private let compactMargin: CGFloat = 16
+    private let expandedMargin: CGFloat = 8
 
     var body: some View {
         GeometryReader { proxy in
-            let progress = expandProgress(for: proxy.size.height)
-            let headerHeight = headerHeight(progress: progress)
+            let fullHeight = proxy.size.height - proxy.safeAreaInsets.top - 8
+            let compactHeight = config.smallestDetentHeight
+            let halfHeight = (fullHeight + compactHeight) / 2
+            let baseHeight = height(for: detent, compact: compactHeight, half: halfHeight, full: fullHeight)
+            let panelHeight = min(max(baseHeight - dragTranslation, compactHeight), fullHeight)
+            // ハーフの高さで 1 になる。
+            let progress = min(max((panelHeight - compactHeight) / (halfHeight - compactHeight), 0), 1)
 
-            ZStack(alignment: .top) {
-                ScrollView(.vertical) {
-                    content
-                        .padding(.top, headerHeight)
-                }
-                .onScrollGeometryChange(for: CGFloat.self) { geometry in
-                    max(geometry.contentOffset.y + geometry.contentInsets.top, 0)
-                } action: { _, newValue in
-                    scrollOffset = newValue
-                }
+            let margin = lerp(compactMargin, expandedMargin, progress)
+            let bottomMargin = lerp(28, 8, progress)
+            let reserve = onAdd == nil ? 0 : (addButtonSize + addButtonGap) * max(1 - progress * 3, 0)
+            let panelWidth = proxy.size.width - margin * 2 - reserve
+            let expandedImageWidth = proxy.size.width - expandedMargin * 2 - headerPadding * 2
 
-                header(progress: progress, height: headerHeight, bottomInset: proxy.safeAreaInsets.bottom)
+            ZStack(alignment: .bottomLeading) {
+                panel(
+                    progress: progress,
+                    height: panelHeight,
+                    width: panelWidth,
+                    expandedImageWidth: expandedImageWidth,
+                    heights: (compactHeight, halfHeight, fullHeight)
+                )
+                .padding(.leading, margin)
+                .padding(.bottom, bottomMargin)
+
+                if let onAdd {
+                    addButton(action: onAdd)
+                        .opacity(max(1 - progress * 4, 0))
+                        .allowsHitTesting(progress < 0.1)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                        .padding(.trailing, margin)
+                        .padding(.bottom, bottomMargin + (compactHeight - addButtonSize) / 2)
+                }
             }
-            .onChange(of: proxy.size.height, initial: true) { _, newValue in
-                sheetHeight = newValue
-            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
         }
-        .presentationDetents([smallestDetent, centerDetent, largestDetent], selection: detentSelection)
-        .presentationDragIndicator(.visible)
-        .presentationBackgroundInteraction(.enabled(upThrough: centerDetent))
-        .interactiveDismissDisabled()
     }
 
-    /// 開いた直後はコンパクト(一番小さい高さ)から始める。
-    private var detentSelection: Binding<PresentationDetent> {
-        Binding(
-            get: { selectedDetent ?? smallestDetent },
-            set: { selectedDetent = $0 }
-        )
+    // MARK: - Panel
+
+    private func panel(
+        progress: CGFloat,
+        height: CGFloat,
+        width: CGFloat,
+        expandedImageWidth: CGFloat,
+        heights: (compact: CGFloat, half: CGFloat, full: CGFloat)
+    ) -> some View {
+        let headerHeight = headerHeight(progress: progress, compact: heights.compact)
+
+        return ZStack(alignment: .top) {
+            ScrollView(.vertical) {
+                content
+                    .padding(.top, headerHeight)
+            }
+            .scrollDisabled(detent != .full)
+            .background(Color(.systemBackground).opacity(min(progress * 4, 1)))
+            .onScrollGeometryChange(for: CGFloat.self) { geometry in
+                max(geometry.contentOffset.y + geometry.contentInsets.top, 0)
+            } action: { _, newValue in
+                scrollOffset = newValue
+            }
+
+            header(progress: progress, height: headerHeight, expandedImageWidth: expandedImageWidth)
+                .gesture(dragGesture(heights: heights))
+        }
+        .frame(width: width, height: height, alignment: .top)
+        .clipShape(UnevenRoundedRectangle(
+            topLeadingRadius: lerp(40, 36, progress),
+            bottomLeadingRadius: 40,
+            bottomTrailingRadius: 40,
+            topTrailingRadius: lerp(40, 36, progress)
+        ))
+        .shadow(color: .black.opacity(0.25), radius: 10, y: 3)
     }
 
     // MARK: - Header
 
-    private func header(progress: CGFloat, height: CGFloat, bottomInset: CGFloat) -> some View {
+    private func header(progress: CGFloat, height: CGFloat, expandedImageWidth: CGFloat) -> some View {
         // 全開後のスクロール量で、画像を最大で半分まで縮める。
         let collapse = min(scrollOffset / 120, 1) * progress
         let imageHeight = lerp(compactImageSize, config.expandedImageHeight * (1 - 0.5 * collapse), progress)
         let imageWidth = lerp(compactImageSize, expandedImageWidth, progress)
-        let radius = lerp(10, config.headerCornerRadius, progress)
+        let radius = lerp(10, 20, progress)
         // 畳み側と展開側のタイトルを重ならないようにクロスフェードする。
         let compactOpacity = max(1 - progress * 4, 0)
         let expandedOpacity = max(progress * 2 - 1, 0)
@@ -96,24 +139,27 @@ struct CustomSheetView<Content: View>: View {
             titleBlock(fontSize: 16)
                 .frame(height: compactImageSize, alignment: .center)
                 .padding(.leading, compactImageSize + 12)
-                .padding(.trailing, 44)
                 .opacity(compactOpacity)
 
             titleBlock(fontSize: 24)
                 .padding(.top, imageHeight + 12)
                 .opacity(expandedOpacity)
-
         }
-        .padding(.horizontal, horizontalPadding)
+        .padding(.horizontal, headerPadding)
         .padding(.top, lerp(16, 24, progress))
         .frame(maxWidth: .infinity, minHeight: height, maxHeight: height, alignment: .topLeading)
-        .background(alignment: .top) {
-            // 畳んだ状態ではシート下端(ホームインジケーター側)までヘッダーの色で埋める。
+        .background {
             config.headerTint
                 .opacity(0.25 + 0.15 * progress)
                 .background(.regularMaterial)
-                .padding(.bottom, -bottomInset * (1 - progress))
         }
+        .overlay(alignment: .top) {
+            Capsule()
+                .fill(.secondary.opacity(0.6))
+                .frame(width: 36, height: 5)
+                .padding(.top, 6)
+        }
+        .contentShape(Rectangle())
     }
 
     private func titleBlock(fontSize: CGFloat) -> some View {
@@ -130,60 +176,57 @@ struct CustomSheetView<Content: View>: View {
         }
     }
 
+    private func addButton(action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: "plus")
+                .font(.system(size: 22, weight: .bold))
+                .foregroundStyle(.primary)
+                .frame(width: addButtonSize, height: addButtonSize)
+                .background(config.headerTint.opacity(0.25), in: .circle)
+                .background(.regularMaterial, in: .circle)
+                .shadow(color: .black.opacity(0.25), radius: 6, y: 2)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("写真を追加")
+    }
+
+    // MARK: - Dragging
+
+    private func dragGesture(heights: (compact: CGFloat, half: CGFloat, full: CGFloat)) -> some Gesture {
+        DragGesture()
+            .updating($dragTranslation) { value, state, _ in
+                state = value.translation.height
+            }
+            .onEnded { value in
+                // 指を離した後の慣性を含めた到達点に、一番近い高さへ吸着する。
+                let current = height(for: detent, compact: heights.compact, half: heights.half, full: heights.full)
+                let projected = current - value.predictedEndTranslation.height
+                let candidates: [(Detent, CGFloat)] = [
+                    (.compact, heights.compact),
+                    (.half, heights.half),
+                    (.full, heights.full),
+                ]
+                let nearest = candidates.min { abs($0.1 - projected) < abs($1.1 - projected) }?.0 ?? detent
+                withAnimation(.spring(duration: 0.4, bounce: 0.15)) {
+                    detent = nearest
+                }
+            }
+    }
+
     // MARK: - Geometry
 
-    private var expandedImageWidth: CGFloat {
-        max(windowSize.width - horizontalPadding * 2, compactImageSize)
+    private func height(for detent: Detent, compact: CGFloat, half: CGFloat, full: CGFloat) -> CGFloat {
+        switch detent {
+        case .compact: compact
+        case .half: half
+        case .full: full
+        }
     }
 
-    private func headerHeight(progress: CGFloat) -> CGFloat {
+    private func headerHeight(progress: CGFloat, compact: CGFloat) -> CGFloat {
         let collapse = min(scrollOffset / 120, 1) * progress
-        let compact = config.smallestDetentHeight
         let expanded = config.expandedImageHeight * (1 - 0.5 * collapse) + 24 + 12 + 12 + 40
         return lerp(compact, expanded, progress)
-    }
-
-    private func expandProgress(for height: CGFloat) -> CGFloat {
-        // ハーフモーダルの高さで、すでにヘッダーが全開(progress = 1)になる。
-        let range = centerHeight - config.smallestDetentHeight
-        guard range > 0 else { return 1 }
-        return min(max((height - config.smallestDetentHeight) / range, 0), 1)
-    }
-
-    private var centerHeight: CGFloat {
-        Self.centerHeight(for: config)
-    }
-
-    private var centerDetent: PresentationDetent {
-        Self.centerDetent(for: config)
-    }
-
-    private static func centerHeight(for config: CustomSheetConfig) -> CGFloat {
-        let maxHeight = config.largestDetentHeight.isFinite
-            ? config.largestDetentHeight
-            : screenSize.height - 10
-        return (maxHeight + config.smallestDetentHeight) / 2
-    }
-
-    private static func centerDetent(for config: CustomSheetConfig) -> PresentationDetent {
-        .height(centerHeight(for: config))
-    }
-
-    private var smallestDetent: PresentationDetent {
-        .height(config.smallestDetentHeight)
-    }
-
-    private var largestDetent: PresentationDetent {
-        config.largestDetentHeight.isFinite ? .height(config.largestDetentHeight) : .large
-    }
-
-    private var windowSize: CGSize { Self.screenSize }
-
-    private static var screenSize: CGSize {
-        let scene = UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .first
-        return scene?.screen.bounds.size ?? CGSize(width: 390, height: 844)
     }
 
     private func lerp(_ from: CGFloat, _ to: CGFloat, _ t: CGFloat) -> CGFloat {
@@ -195,12 +238,13 @@ struct CustomSheetView<Content: View>: View {
     @Previewable @State var config = CustomSheetConfig()
     Color.gray.opacity(0.2)
         .ignoresSafeArea()
-        .sheet(isPresented: .constant(true)) {
+        .overlay {
             CustomSheetView(
                 config: $config,
                 title: "代々木公園入口",
                 caption: "2026年10月2日 18:11",
-                headerImage: Image(systemName: "photo")
+                headerImage: Image(systemName: "photo"),
+                onAdd: {}
             ) {
                 VStack(alignment: .leading, spacing: 12) {
                     ForEach(0..<20) { index in

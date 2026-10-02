@@ -4,8 +4,8 @@ import SwiftUI
 
 struct TripDetailView: View {
     @Bindable var trip: Trip
-    /// シートに表示中の写真。別のピンをタップしても、シートは閉じずに中身だけ差し替える。
-    @State private var sheetItem: PhotoSheetItem?
+    /// パネルに表示中の写真。別のピンをタップしても、パネルは閉じずに中身だけ差し替える。
+    @State private var selectedPhoto: TripPhoto?
     @State private var sheetConfig = CustomSheetConfig()
 
     var body: some View {
@@ -23,59 +23,58 @@ struct TripDetailView: View {
                     anchor: .bottom
                 ) {
                     PhotoPinCallout(photo: photo) {
-                        sheetItem = PhotoSheetItem(photo: photo)
+                        selectedPhoto = photo
                     }
                 }
             }
         }
         .mapStyle(.hybrid())
-        .onGeometryChange(for: CGSize.self) {
-            $0.size
-        } action: { newValue in
-            sheetConfig.largestDetentHeight = newValue.height - 10
-        }
         .navigationBarTitleDisplayMode(.inline)
-        .overlay(alignment: .bottomTrailing) {
-            addPhotoButton
-        }
-        .sheet(item: $sheetItem) { item in
-            let photo = item.photo
-            CustomSheetView(
-                config: $sheetConfig,
-                title: photo.takenAt.formatted(date: .abbreviated, time: .shortened),
-                caption: photo.isLocationManuallyPlaced ? "位置は手動で指定されました" : "",
-                headerImage: photo.image
-            ) {
-                EmptyView()
+        .overlay {
+            ZStack {
+                if let photo = selectedPhoto {
+                    CustomSheetView(
+                        config: $sheetConfig,
+                        title: photo.takenAt.formatted(date: .abbreviated, time: .shortened),
+                        caption: photo.isLocationManuallyPlaced ? "位置は手動で指定されました" : "",
+                        headerImage: photo.image,
+                        onAdd: addPhoto
+                    ) {
+                        EmptyView()
+                    }
+                    .transition(.move(edge: .bottom))
+                } else {
+                    addPhotoButton
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+                        .transition(.opacity)
+                }
             }
+            .ignoresSafeArea(edges: .bottom)
+            .animation(.spring(duration: 0.4), value: selectedPhoto == nil)
         }
+    }
+
+    private func addPhoto() {
+        // TODO: 写真の追加(未実装)
     }
 }
 
 private extension TripDetailView {
-    /// 右下のタブのような円形の追加ボタン。コンパクトのシートが出ているときは、その上に避ける。
+    /// パネルがないときの、右下の円形の追加ボタン。パネルのコンパクト時のボタンと同じ位置に置く。
     var addPhotoButton: some View {
-        Button {
-            // TODO: 写真の追加(未実装)
-        } label: {
+        Button(action: addPhoto) {
             Image(systemName: "plus")
                 .font(.system(size: 22, weight: .bold))
+                .foregroundStyle(.primary)
                 .frame(width: 56, height: 56)
                 .background(.regularMaterial, in: .circle)
-                .shadow(color: .black.opacity(0.25), radius: 4, y: 2)
+                .shadow(color: .black.opacity(0.25), radius: 6, y: 2)
         }
         .buttonStyle(.plain)
         .accessibilityLabel("写真を追加")
         .padding(.trailing, 16)
-        .padding(.bottom, sheetItem == nil ? 16 : 80)
-        .animation(.spring(duration: 0.35), value: sheetItem == nil)
+        .padding(.bottom, 40)
     }
-}
-
-/// id を固定して、写真が変わってもシートを作り直さず中身だけ差し替えるためのラッパー。
-private struct PhotoSheetItem: Identifiable {
-    let id = "photo-sheet"
-    let photo: TripPhoto
 }
 
 extension TripPhoto {
