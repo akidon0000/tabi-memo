@@ -4,7 +4,7 @@ import SwiftUI
 struct CustomSheetConfig {
     var headerTint: Color = .yellow
     /// 一番小さく畳んだとき(コンパクト)のパネルの高さ。
-    var smallestDetentHeight: CGFloat = 80
+    var smallestDetentHeight: CGFloat = 64
     /// ハーフ以上のときのヘッダー画像の高さ。
     var expandedImageHeight: CGFloat = 240
 }
@@ -33,7 +33,7 @@ struct CustomSheetView<Content: View>: View {
     @GestureState private var dragTranslation: CGFloat = 0
     @State private var scrollOffset: CGFloat = 0
 
-    private let compactImageSize: CGFloat = 48
+    private let compactImageSize: CGFloat = 40
     private let headerPadding: CGFloat = 16
     /// 追加ボタンはコンパクトのバナーと同じ高さの円にする。
     private var addButtonSize: CGFloat { config.smallestDetentHeight }
@@ -154,7 +154,7 @@ struct CustomSheetView<Content: View>: View {
                 .opacity(expandedOpacity)
         }
         .padding(.horizontal, headerPadding)
-        .padding(.top, lerp(16, 24, progress))
+        .padding(.top, lerp((config.smallestDetentHeight - compactImageSize) / 2, 24, progress))
         .frame(maxWidth: .infinity, minHeight: height, maxHeight: height, alignment: .topLeading)
         .overlay(alignment: .top) {
             Capsule()
@@ -183,9 +183,9 @@ struct CustomSheetView<Content: View>: View {
         Button(action: action) {
             Image(systemName: "plus")
                 .font(.system(size: 22, weight: .bold))
-                .foregroundStyle(.white)
+                .foregroundStyle(.primary)
                 .frame(width: addButtonSize, height: addButtonSize)
-                .glassEffect(.regular.tint(.blue.opacity(0.6)).interactive(), in: .circle)
+                .glassEffect(.regular.interactive(), in: .circle)
         }
         .buttonStyle(.plain)
         .accessibilityLabel("写真を追加")
