@@ -43,13 +43,16 @@ struct CustomSheetView<Content: View>: View {
 
     var body: some View {
         GeometryReader { proxy in
-            let fullHeight = proxy.size.height - proxy.safeAreaInsets.top - 8
+            // proxy は上のセーフエリア(ナビバー)の下から始まるので、上端は引かない。
+            let fullHeight = proxy.size.height - 8
             let compactHeight = config.smallestDetentHeight
             let halfHeight = (fullHeight + compactHeight) / 2
             let baseHeight = height(for: detent, compact: compactHeight, half: halfHeight, full: fullHeight)
             let panelHeight = min(max(baseHeight - dragTranslation, compactHeight), fullHeight)
             // ハーフの高さで 1 になる。
             let progress = min(max((panelHeight - compactHeight) / (halfHeight - compactHeight), 0), 1)
+            // ハーフ→全開で 0 → 1。全開に近づくほど中身の背景を白くする。
+            let fullProgress = min(max((panelHeight - halfHeight) / (fullHeight - halfHeight), 0), 1)
 
             let margin = lerp(compactMargin, expandedMargin, progress)
             let bottomMargin = lerp(28, 8, progress)
@@ -61,6 +64,7 @@ struct CustomSheetView<Content: View>: View {
                 ZStack(alignment: .bottomLeading) {
                 panel(
                     progress: progress,
+                    fullProgress: fullProgress,
                     height: panelHeight,
                     width: panelWidth,
                     expandedImageWidth: expandedImageWidth,
@@ -69,10 +73,9 @@ struct CustomSheetView<Content: View>: View {
                 .padding(.leading, margin)
                 .padding(.bottom, bottomMargin)
 
-                if let onAdd {
+                // 広がり始めたら取り除く(ガラスは opacity では消えないので、ビューごと外す)。
+                if let onAdd, progress < 0.12 {
                     addButton(action: onAdd)
-                        .opacity(max(1 - progress * 4, 0))
-                        .allowsHitTesting(progress < 0.1)
                         .frame(maxWidth: .infinity, alignment: .trailing)
                         .padding(.trailing, margin)
                         .padding(.bottom, bottomMargin)
@@ -87,6 +90,7 @@ struct CustomSheetView<Content: View>: View {
 
     private func panel(
         progress: CGFloat,
+        fullProgress: CGFloat,
         height: CGFloat,
         width: CGFloat,
         expandedImageWidth: CGFloat,
@@ -100,7 +104,8 @@ struct CustomSheetView<Content: View>: View {
                     .padding(.top, headerHeight)
             }
             .scrollDisabled(detent != .full)
-            .background(Color(.systemBackground).opacity(min(progress * 4, 1)))
+            // ハーフまでは透明(ガラス越し)、全開で白。
+            .background(Color(.systemBackground).opacity(fullProgress))
             .onScrollGeometryChange(for: CGFloat.self) { geometry in
                 max(geometry.contentOffset.y + geometry.contentInsets.top, 0)
             } action: { _, newValue in
