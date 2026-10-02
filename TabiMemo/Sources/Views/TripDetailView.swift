@@ -8,9 +8,12 @@ struct TripDetailView: View {
     @State private var selectedPhoto: TripPhoto?
     @State private var sheetConfig = CustomSheetConfig()
     @State private var zoomedPhoto: TripPhoto?
+    @State private var cameraPosition: MapCameraPosition = .automatic
+    /// いまの地図の表示範囲。スワイプで移動するとき、拡大率を保ったまま中心だけ動かすのに使う。
+    @State private var visibleRegion: MKCoordinateRegion?
 
     var body: some View {
-        Map {
+        Map(position: $cameraPosition) {
             if trip.locationPoints.count > 1 {
                 MapPolyline(coordinates: trip.locationPoints
                     .sorted { $0.timestamp < $1.timestamp }
@@ -30,6 +33,7 @@ struct TripDetailView: View {
             }
         }
         .mapStyle(.hybrid())
+        .onMapCameraChange(frequency: .onEnd) { visibleRegion = $0.region }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .navigationBar)
         .overlay {
@@ -44,7 +48,7 @@ struct TripDetailView: View {
                         onAdd: addPhoto,
                         onImageTap: { zoomedPhoto = photo },
                         canPage: { neighbor($0, of: photo) != nil },
-                        onPage: { if let next = neighbor($0, of: photo) { selectedPhoto = next } },
+                        onPage: { if let next = neighbor($0, of: photo) { selectedPhoto = next; focusMap(on: next) } },
                         neighbor: { step in
                             neighbor(step, of: photo).map {
                                 PageSnapshot(
@@ -85,6 +89,19 @@ struct TripDetailView: View {
         guard let index = sorted.firstIndex(where: { $0.id == photo.id }),
               sorted.indices.contains(index + step) else { return nil }
         return sorted[index + step]
+    }
+
+    /// 地図をその写真のスポットへ動かす(パネルに隠れない位置へ)。拡大率は変えない。
+    private func focusMap(on photo: TripPhoto) {
+        let span = visibleRegion?.span ?? MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)
+        withAnimation(.easeInOut(duration: 0.8)) {
+            // パネルが下半分を覆うので、スポットが見える上半分の中央に来るよう、中心を南へずらす。
+            let center = CLLocationCoordinate2D(
+                latitude: photo.coordinate.latitude - span.latitudeDelta * 0.22,
+                longitude: photo.coordinate.longitude
+            )
+            cameraPosition = .region(MKCoordinateRegion(center: center, span: span))
+        }
     }
 
     private func addPhoto() {
