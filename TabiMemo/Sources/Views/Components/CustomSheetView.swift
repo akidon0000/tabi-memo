@@ -16,7 +16,6 @@ struct CustomSheetView<Content: View>: View {
     var headerImage: Image
     @ViewBuilder var content: Content
 
-    @Environment(\.dismiss) private var dismiss
     @State private var sheetHeight: CGFloat = 0
     /// nil の間は常にコンパクト(最新の config から計算)を選択扱いにする。
     @State private var selectedDetent: PresentationDetent?
@@ -38,7 +37,6 @@ struct CustomSheetView<Content: View>: View {
 
     private let compactImageSize: CGFloat = 48
     private let horizontalPadding: CGFloat = 16
-    private let closeBarHeight: CGFloat = 40
 
     var body: some View {
         GeometryReader { proxy in
@@ -85,8 +83,6 @@ struct CustomSheetView<Content: View>: View {
         let imageWidth = lerp(compactImageSize, expandedImageWidth, progress)
         let radius = lerp(10, config.headerCornerRadius, progress)
         // 畳み側と展開側のタイトルを重ならないようにクロスフェードする。
-        // ×ボタンの行。展開するほど写真を下にずらし、ボタンと重ならないようにする。
-        let barHeight = closeBarHeight * progress
         let compactOpacity = max(1 - progress * 4, 0)
         let expandedOpacity = max(progress * 2 - 1, 0)
 
@@ -96,7 +92,6 @@ struct CustomSheetView<Content: View>: View {
                 .scaledToFill()
                 .frame(width: imageWidth, height: imageHeight)
                 .clipShape(RoundedRectangle(cornerRadius: radius))
-                .padding(.top, barHeight)
 
             titleBlock(fontSize: 16)
                 .frame(height: compactImageSize, alignment: .center)
@@ -105,15 +100,9 @@ struct CustomSheetView<Content: View>: View {
                 .opacity(compactOpacity)
 
             titleBlock(fontSize: 24)
-                .padding(.top, barHeight + imageHeight + 12)
+                .padding(.top, imageHeight + 12)
                 .opacity(expandedOpacity)
 
-            // コンパクトでは非表示。ヘッダーが開くにつれて現れる。
-            closeButton
-                .frame(maxWidth: .infinity, alignment: .trailing)
-                .offset(y: 0)
-                .opacity(progress)
-                .allowsHitTesting(progress > 0.5)
         }
         .padding(.horizontal, horizontalPadding)
         .padding(.top, lerp(16, 24, progress))
@@ -141,19 +130,6 @@ struct CustomSheetView<Content: View>: View {
         }
     }
 
-    private var closeButton: some View {
-        Button {
-            dismiss()
-        } label: {
-            Image(systemName: "xmark")
-                .font(.system(size: 14, weight: .bold))
-                .foregroundStyle(.primary)
-                .frame(width: 32, height: 32)
-                .background(.thinMaterial, in: .circle)
-        }
-        .accessibilityLabel("閉じる")
-    }
-
     // MARK: - Geometry
 
     private var expandedImageWidth: CGFloat {
@@ -163,7 +139,7 @@ struct CustomSheetView<Content: View>: View {
     private func headerHeight(progress: CGFloat) -> CGFloat {
         let collapse = min(scrollOffset / 120, 1) * progress
         let compact = config.smallestDetentHeight
-        let expanded = closeBarHeight + config.expandedImageHeight * (1 - 0.5 * collapse) + 24 + 12 + 12 + 40
+        let expanded = config.expandedImageHeight * (1 - 0.5 * collapse) + 24 + 12 + 12 + 40
         return lerp(compact, expanded, progress)
     }
 
