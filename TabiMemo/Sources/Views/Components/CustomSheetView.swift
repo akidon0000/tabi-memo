@@ -186,6 +186,9 @@ struct CustomSheetView<Content: View>: View {
         let headerHeight = headerHeight(progress: progress, fullProgress: fullProgress, compact: heights.compact, imageHeight: expandedImageHeight) + topExtra
 
         return ZStack(alignment: .top) {
+            // ハーフまでは透明(ガラス越し)、全開で白。スクロール側ではなくここに敷いて、後ろの先読みカードの下にも白が来るようにする。
+            Color(.systemBackground).opacity(fullProgress)
+
             // 前後の写真を後ろに先読みして出す。スワイプ量に応じて手前へ寄ってくる。
             if pageOffset != 0, let snap = neighbor?(peekStep) {
                 peekCard(snap, progress: progress, fullProgress: fullProgress, width: expandedImageWidth, topPad: lerp((config.smallestDetentHeight - compactImageSize) / 2, 24 + closeBarHeight * fullProgress, progress) + topExtra)
@@ -198,8 +201,6 @@ struct CustomSheetView<Content: View>: View {
             }
             .scrollPosition($scrollPosition)
             .scrollDisabled(detent != .full)
-            // ハーフまでは透明(ガラス越し)、全開で白。
-            .background(Color(.systemBackground).opacity(fullProgress))
             .onScrollGeometryChange(for: CGFloat.self) { geometry in
                 max(geometry.contentOffset.y + geometry.contentInsets.top, 0)
             } action: { _, newValue in
@@ -388,7 +389,9 @@ struct CustomSheetView<Content: View>: View {
                 Text(snap.title)
                     .font(.system(size: 24, weight: .bold))
                     .lineLimit(1)
+                // 中身(メモ)は自前で左右に余白を持つので、ここでの余白を打ち消す。
                 snap.content
+                    .padding(.horizontal, -headerPadding)
             }
             .padding(.top, imageHeight + 12)
             .opacity(expandedOpacity)
