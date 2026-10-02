@@ -40,9 +40,11 @@ struct TripDetailView: View {
                         caption: photo.isLocationManuallyPlaced ? "位置は手動で指定されました" : "",
                         headerImage: photo.image,
                         headerAspectRatio: photo.aspectRatio,
-                        onAdd: addPhoto
+                        onAdd: addPhoto,
+                        canPage: { neighbor($0, of: photo) != nil },
+                        onPage: { if let next = neighbor($0, of: photo) { selectedPhoto = next } }
                     ) {
-                        EmptyView()
+                        PhotoMemoView(photo: photo)
                     }
                     .transition(.move(edge: .bottom))
                 } else {
@@ -54,6 +56,14 @@ struct TripDetailView: View {
             .ignoresSafeArea()
             .animation(.spring(duration: 0.4), value: selectedPhoto == nil)
         }
+    }
+
+    /// 撮影順で隣の写真(step: 前 -1 / 次 +1)。端なら nil。
+    private func neighbor(_ step: Int, of photo: TripPhoto) -> TripPhoto? {
+        let sorted = trip.photos.sorted { $0.takenAt < $1.takenAt }
+        guard let index = sorted.firstIndex(where: { $0.id == photo.id }),
+              sorted.indices.contains(index + step) else { return nil }
+        return sorted[index + step]
     }
 
     private func addPhoto() {
@@ -75,6 +85,24 @@ private extension TripDetailView {
         .accessibilityLabel("写真を追加")
         .padding(.trailing, 16)
         .padding(.bottom, 28)
+    }
+}
+
+/// 写真に添えるメモ。パネルの中身(写真の下)に出て、写真と一緒にスクロールする。
+private struct PhotoMemoView: View {
+    @Bindable var photo: TripPhoto
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("メモ")
+                .font(.headline)
+            TextField("メモを書く", text: $photo.memo, axis: .vertical)
+                .lineLimit(5...)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 16)
+        // キーボードで隠れないよう下に余白を取る。写真が上へ流れきるまでスクロールもできる。
+        .padding(.bottom, 360)
     }
 }
 

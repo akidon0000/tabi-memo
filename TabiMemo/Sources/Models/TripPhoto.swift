@@ -10,6 +10,8 @@ final class TripPhoto {
     var takenAt: Date
     /// EXIF/現在地から位置を取得できず、ユーザーが地図タップで手動配置した場合に true。
     var isLocationManuallyPlaced: Bool
+    /// 写真に添えるメモ。
+    var memo: String = ""
     var trip: Trip?
 
     init(
@@ -17,7 +19,8 @@ final class TripPhoto {
         latitude: Double,
         longitude: Double,
         takenAt: Date = .now,
-        isLocationManuallyPlaced: Bool = false
+        isLocationManuallyPlaced: Bool = false,
+        memo: String = ""
     ) {
         id = UUID()
         self.imageData = imageData
@@ -25,5 +28,6 @@ final class TripPhoto {
         self.longitude = longitude
         self.takenAt = takenAt
         self.isLocationManuallyPlaced = isLocationManuallyPlaced
+        self.memo = memo
     }
 }

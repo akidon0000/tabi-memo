@@ -45,11 +45,11 @@ enum SampleData {
             point.trip = trip
         }
 
-        let photoSpecs: [(waypointIndex: Int, offsetMinutes: Double, color: UIColor, label: String, size: CGSize)] = [
+        let photoSpecs: [(waypointIndex: Int, offsetMinutes: Double, color: UIColor, label: String, size: CGSize, memo: String)] = [
             // 縦どりの写真。
-            (0, 0, .systemBlue, "渋谷駅", CGSize(width: 600, height: 800)),
-            (3, 20, .systemGreen, "代々木公園入口", CGSize(width: 800, height: 600)),
-            (6, 40, .systemOrange, "公園のベンチ", CGSize(width: 600, height: 600)),
+            (0, 0, .systemBlue, "渋谷駅", CGSize(width: 600, height: 800), "ハチ公前は待ち合わせの人でいっぱい。ここから代々木公園まで歩いて向かう。\n\n天気は快晴。スクランブル交差点を渡って、井ノ頭通りへ。"),
+            (3, 20, .systemGreen, "代々木公園入口", CGSize(width: 800, height: 600), "公園の入口に到着。\n\n・木陰が気持ちいい\n・売店でコーヒーを買った\n・犬の散歩をしている人が多い\n\n奥の広場まで行ってみる。ベンチで少し休む予定。長めのメモで、スクロールしたときに写真ごと上に流れていくかを確認するための文章です。"),
+            (6, 40, .systemOrange, "公園のベンチ", CGSize(width: 600, height: 600), "公園のベンチで休憩。"),
         ]
         for spec in photoSpecs {
             let waypoint = waypoints[spec.waypointIndex]
@@ -57,7 +57,8 @@ enum SampleData {
                 imageData: placeholderImage(color: spec.color, label: spec.label, size: spec.size),
                 latitude: waypoint.lat,
                 longitude: waypoint.lon,
-                takenAt: start.addingTimeInterval(spec.offsetMinutes * 60)
+                takenAt: start.addingTimeInterval(spec.offsetMinutes * 60),
+                memo: spec.memo
             )
             photo.trip = trip
         }

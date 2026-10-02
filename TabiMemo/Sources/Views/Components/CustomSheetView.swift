@@ -25,6 +25,10 @@ struct CustomSheetView<Content: View>: View {
     var headerAspectRatio: CGFloat = 1.5
     /// 指定すると、コンパクト時にバナーの右へ円形の追加ボタンを出す。
     var onAdd: (() -> Void)?
+    /// 左右スワイプで前後へ移れるか(step: 前 -1 / 次 +1)。nil ならスワイプで移らない。
+    var canPage: ((Int) -> Bool)?
+    /// 前後へ移る。呼び出し側が表示内容(title / headerImage / content)を差し替える。
+    var onPage: ((Int) -> Void)?
     @ViewBuilder var content: Content
 
     private enum Detent {
@@ -35,6 +39,11 @@ struct CustomSheetView<Content: View>: View {
     @GestureState private var dragTranslation: CGFloat = 0
     @State private var scrollOffset: CGFloat = 0
     @State private var barNudge: CGFloat = 0
+    @State private var pageOffset: CGFloat = 0
+    @State private var pageOpacity: CGFloat = 1
+    @State private var pageScale: CGFloat = 1
+    @State private var isSwiping = false
+    @State private var scrollPosition = ScrollPosition(edge: .top)
     /// 指がヘッダーに触れている間 true。揺らしの判定に使う(task から読めるよう @State に写す)。
     @GestureState private var isPressing = false
     @State private var isTouching = false
@@ -169,7 +178,9 @@ struct CustomSheetView<Content: View>: View {
             ScrollView(.vertical) {
                 content
                     .padding(.top, headerHeight)
+                    .modifier(PageCard(offset: pageOffset, opacity: pageOpacity, scale: pageScale))
             }
+            .scrollPosition($scrollPosition)
             .scrollDisabled(detent != .full)
             // ハーフまでは透明(ガラス越し)、全開で白。
             .background(Color(.systemBackground).opacity(fullProgress))
@@ -179,13 +190,38 @@ struct CustomSheetView<Content: View>: View {
                 scrollOffset = newValue
             }
 
-            header(progress: progress, fullProgress: fullProgress, height: headerHeight, topExtra: topExtra, expandedImageWidth: expandedImageWidth, expandedImageHeight: expandedImageHeight)
-                .gesture(dragGesture(heights: heights))
-                .simultaneousGesture(
-                    DragGesture(minimumDistance: 0, coordinateSpace: .global)
-                        .updating($isPressing) { _, state, _ in state = true }
-                )
+            header(progress: progress, fullProgress: fullProgress, height: headerHeight, topExtra: topExtra, expandedImageWidth: expandedImageWidth, expandedImageHeight: expandedImageHeight, heights: heights)
         }
+        // 左右スワイプで前後の写真へ。指に追従して傾き、一定以上動かすと飛んでいって次の写真が入る(Tinder 風)。
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 24, coordinateSpace: .global)
+                .onChanged { value in
+                    let w = value.translation.width, h = value.translation.height
+                    if !isSwiping {
+                        guard abs(w) > 12, abs(w) > abs(h) * 1.5 else { return }
+                        isSwiping = true
+                    }
+                    // 移れない向き(端)では、抵抗をつけて少ししか動かさない。
+                    let hasNeighbor = canPage?(w < 0 ? 1 : -1) == true
+                    pageOffset = hasNeighbor ? w : w * 0.3
+                    pageOpacity = 1 - min(abs(pageOffset) / 500, 0.5)
+                }
+                .onEnded { value in
+                    guard isSwiping else { return }
+                    isSwiping = false
+                    let w = value.translation.width
+                    let step = w < 0 ? 1 : -1
+                    let flings = abs(w) > 110 || abs(value.predictedEndTranslation.width) > 260
+                    if flings, canPage?(step) == true {
+                        flingAway(step)
+                    } else {
+                        withAnimation(.spring(duration: 0.35, bounce: 0.25)) {
+                            pageOffset = 0
+                            pageOpacity = 1
+                        }
+                    }
+                }
+        )
         .frame(width: width, height: height, alignment: .top)
         .clipShape(panelShape(progress: progress, edge: 1 - fullProgress))
         // Liquid Glass。ヘッダーの色を tint として乗せる。
@@ -212,10 +248,16 @@ struct CustomSheetView<Content: View>: View {
 
     // MARK: - Header
 
-    private func header(progress: CGFloat, fullProgress: CGFloat, height: CGFloat, topExtra: CGFloat, expandedImageWidth: CGFloat, expandedImageHeight: CGFloat) -> some View {
-        // 全開後のスクロール量で、画像を最大で半分まで縮める。
-        let collapse = min(scrollOffset / 120, 1) * progress
-        let imageHeight = lerp(compactImageSize, expandedImageHeight * (1 - 0.5 * collapse), progress)
+    private func header(
+        progress: CGFloat,
+        fullProgress: CGFloat,
+        height: CGFloat,
+        topExtra: CGFloat,
+        expandedImageWidth: CGFloat,
+        expandedImageHeight: CGFloat,
+        heights: (compact: CGFloat, half: CGFloat, full: CGFloat)
+    ) -> some View {
+        let imageHeight = lerp(compactImageSize, expandedImageHeight, progress)
         let imageWidth = lerp(compactImageSize, expandedImageWidth, progress)
         // 写真の角は、パネルの角に同心(パネルの半径 - 写真までの余白)。全開ではパネルの角が消えるので 20 に寄せる。
         let inset = lerp((config.smallestDetentHeight - compactImageSize) / 2, headerPadding, progress)
@@ -226,8 +268,12 @@ struct CustomSheetView<Content: View>: View {
         let expandedOpacity = max(progress * 2 - 1, 0)
         // 写真は×ボタンの行の下に置く(×は全開のときだけなので、行も全開に向けて確保する)。
         let barHeight = closeBarHeight * fullProgress
+        let topPad = lerp((config.smallestDetentHeight - compactImageSize) / 2, 24, progress) + topExtra
+        // 全開のときに上に固定する行(バー・×)の高さ。写真とタイトルはこの下をスクロールで流れる。
+        let pinnedHeight = (24 + closeBarHeight + topExtra) * fullProgress
 
-        return ZStack(alignment: .topLeading) {
+        // 写真とタイトル。全開ではスクロール量だけ上へ流す(中身と一緒に動く)。
+        let scrolling = ZStack(alignment: .topLeading) {
             headerImage
                 .resizable()
                 .scaledToFill()
@@ -243,31 +289,83 @@ struct CustomSheetView<Content: View>: View {
             titleBlock(fontSize: 24)
                 .padding(.top, barHeight + imageHeight + 12)
                 .opacity(expandedOpacity)
-
-            closeButton
-                .frame(maxWidth: .infinity, alignment: .trailing)
-                // ヘッダーの上余白(24)を打ち消して、バーと同じ行に置く。
-                .offset(y: -16)
-                // 全開のときだけ表示する(ハーフでは出さない)。
-                .opacity(fullProgress)
-                .allowsHitTesting(fullProgress > 0.9)
         }
         .padding(.horizontal, headerPadding)
-        .padding(.top, lerp((config.smallestDetentHeight - compactImageSize) / 2, 24, progress) + topExtra)
+        .padding(.top, topPad)
         .frame(maxWidth: .infinity, minHeight: height, maxHeight: height, alignment: .topLeading)
-        .overlay(alignment: .top) {
-            Capsule()
-                .fill(.secondary.opacity(0.6))
-                .frame(width: 36, height: 5)
-                // タップしやすいよう当たり判定を広げる。見た目の位置は変えない。
-                .frame(width: 96, height: 28)
+        .offset(y: -scrollOffset * fullProgress)
+        .modifier(PageCard(offset: pageOffset, opacity: pageOpacity, scale: pageScale))
+
+        return ZStack(alignment: .top) {
+            scrolling
                 .contentShape(Rectangle())
-                .onTapGesture { advanceDetent() }
-                .padding(.top, 6 + topExtra - 11.5)
-                // 全開で「下にスワイプできる」ことを知らせるときに、下へ揺らす。
-                .offset(y: barNudge)
+                // 全開では下の ScrollView にタッチを通す(スクロール・縦ドラッグの競合を避ける)。
+                .allowsHitTesting(detent != .full)
+                .gesture(dragGesture(heights: heights))
+                .simultaneousGesture(
+                    DragGesture(minimumDistance: 0, coordinateSpace: .global)
+                        .updating($isPressing) { _, state, _ in state = true }
+                )
+
+            // 上に固定する行: 白い背景(写真が下をくぐる)、ドラッグバー、×ボタン。
+            ZStack(alignment: .top) {
+                Color(.systemBackground)
+                    .opacity(fullProgress)
+                    .frame(height: pinnedHeight)
+                    .frame(maxHeight: .infinity, alignment: .top)
+                    .allowsHitTesting(false)
+
+                Color.clear
+                    .frame(height: 40 + topExtra)
+                    .contentShape(Rectangle())
+                    .onTapGesture { advanceDetent() }
+                    .gesture(dragGesture(heights: heights))
+                    .frame(maxHeight: .infinity, alignment: .top)
+
+                Capsule()
+                    .fill(.secondary.opacity(0.6))
+                    .frame(width: 36, height: 5)
+                    .padding(.top, 6 + topExtra)
+                    // 全開で「下にスワイプできる」ことを知らせるときに、下へ揺らす。
+                    .offset(y: barNudge)
+                    .allowsHitTesting(false)
+                    .frame(maxHeight: .infinity, alignment: .top)
+
+                closeButton
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .padding(.horizontal, headerPadding)
+                    .padding(.top, 8 + topExtra)
+                    // 全開のときだけ表示する(ハーフでは出さない)。
+                    .opacity(fullProgress)
+                    .allowsHitTesting(fullProgress > 0.9)
+                    .frame(maxHeight: .infinity, alignment: .top)
+            }
         }
-        .contentShape(Rectangle())
+        .frame(height: height, alignment: .top)
+    }
+
+    /// 指を離した向きへ飛ばして消し、差し替えた次の写真を手前に入れる。
+    private func flingAway(_ step: Int) {
+        guard let onPage else { return }
+        withAnimation(.easeIn(duration: 0.2)) {
+            pageOffset = CGFloat(-step) * 520
+            pageOpacity = 0
+        }
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(200))
+            onPage(step)
+            scrollPosition.scrollTo(edge: .top)
+            var instant = Transaction()
+            instant.disablesAnimations = true
+            withTransaction(instant) {
+                pageOffset = 0
+                pageScale = 0.9
+            }
+            withAnimation(.spring(duration: 0.35, bounce: 0.2)) {
+                pageOpacity = 1
+                pageScale = 1
+            }
+        }
     }
 
     /// iOS 26 純正のガラスの丸ボタン(.glass + .circle)。サイズと押下の反応はシステムに任せる。
@@ -315,9 +413,12 @@ struct CustomSheetView<Content: View>: View {
     private func dragGesture(heights: (compact: CGFloat, half: CGFloat, full: CGFloat)) -> some Gesture {
         DragGesture(coordinateSpace: .global)
             .updating($dragTranslation) { value, state, _ in
-                state = value.translation.height
+                let w = value.translation.width, h = value.translation.height
+                state = abs(w) > abs(h) * 1.5 ? 0 : h
             }
             .onEnded { value in
+                // 横向きのドラッグは前後の写真への移動なので、段階は変えない。
+                if abs(value.translation.width) > abs(value.translation.height) * 1.5 { return }
                 // 指を離した後の慣性を含めた到達点に、一番近い高さへ吸着する。
                 let current = height(for: detent, compact: heights.compact, half: heights.half, full: heights.full)
                 let projected = current - value.predictedEndTranslation.height
@@ -344,8 +445,7 @@ struct CustomSheetView<Content: View>: View {
     }
 
     private func headerHeight(progress: CGFloat, fullProgress: CGFloat, compact: CGFloat, imageHeight: CGFloat) -> CGFloat {
-        let collapse = min(scrollOffset / 120, 1) * progress
-        let expanded = closeBarHeight * fullProgress + imageHeight * (1 - 0.5 * collapse) + 24 + 12 + 12 + 40
+        let expanded = closeBarHeight * fullProgress + imageHeight + 24 + 12 + 12 + 40
         return lerp(compact, expanded, progress)
     }
 
@@ -367,6 +467,21 @@ struct CustomSheetView<Content: View>: View {
 
     private func lerp(_ from: CGFloat, _ to: CGFloat, _ t: CGFloat) -> CGFloat {
         from + (to - from) * t
+    }
+}
+
+/// 左右スワイプ中のカードの見た目: 横に動き、動いた量だけ下端を軸に傾く。
+private struct PageCard: ViewModifier {
+    var offset: CGFloat
+    var opacity: CGFloat
+    var scale: CGFloat
+
+    func body(content: Content) -> some View {
+        content
+            .scaleEffect(scale)
+            .rotationEffect(.degrees(Double(offset) / 18), anchor: .bottom)
+            .offset(x: offset)
+            .opacity(opacity)
     }
 }
 
