@@ -62,7 +62,9 @@ struct CustomSheetView<Content: View>: View {
             }
         }
         .presentationDetents([.height(config.smallestDetentHeight), centerDetent, largestDetent], selection: detentSelection)
-        .presentationDragIndicator(.hidden)
+        .presentationDragIndicator(.visible)
+        .presentationBackgroundInteraction(.enabled(upThrough: centerDetent))
+        .interactiveDismissDisabled()
     }
 
     /// 開いた直後はハーフモーダル(中間の高さ)から始める。
