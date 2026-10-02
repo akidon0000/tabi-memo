@@ -67,8 +67,7 @@ private extension TripDetailView {
                 .font(.system(size: 22, weight: .bold))
                 .foregroundStyle(.primary)
                 .frame(width: 56, height: 56)
-                .background(.regularMaterial, in: .circle)
-                .shadow(color: .black.opacity(0.25), radius: 6, y: 2)
+                .glassEffect(.regular.tint(.yellow.opacity(0.3)).interactive(), in: .circle)
         }
         .buttonStyle(.plain)
         .accessibilityLabel("写真を追加")

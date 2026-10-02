@@ -56,7 +56,8 @@ struct CustomSheetView<Content: View>: View {
             let panelWidth = proxy.size.width - margin * 2 - reserve
             let expandedImageWidth = proxy.size.width - expandedMargin * 2 - headerPadding * 2
 
-            ZStack(alignment: .bottomLeading) {
+            GlassEffectContainer(spacing: 4) {
+                ZStack(alignment: .bottomLeading) {
                 panel(
                     progress: progress,
                     height: panelHeight,
@@ -74,6 +75,7 @@ struct CustomSheetView<Content: View>: View {
                         .frame(maxWidth: .infinity, alignment: .trailing)
                         .padding(.trailing, margin)
                         .padding(.bottom, bottomMargin + (compactHeight - addButtonSize) / 2)
+                }
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
@@ -108,13 +110,18 @@ struct CustomSheetView<Content: View>: View {
                 .gesture(dragGesture(heights: heights))
         }
         .frame(width: width, height: height, alignment: .top)
-        .clipShape(UnevenRoundedRectangle(
+        .clipShape(panelShape(progress: progress))
+        // Liquid Glass。ヘッダーの色を tint として乗せる。
+        .glassEffect(.regular.tint(config.headerTint.opacity(0.3)), in: panelShape(progress: progress))
+    }
+
+    private func panelShape(progress: CGFloat) -> UnevenRoundedRectangle {
+        UnevenRoundedRectangle(
             topLeadingRadius: lerp(40, 36, progress),
             bottomLeadingRadius: 40,
             bottomTrailingRadius: 40,
             topTrailingRadius: lerp(40, 36, progress)
-        ))
-        .shadow(color: .black.opacity(0.25), radius: 10, y: 3)
+        )
     }
 
     // MARK: - Header
@@ -148,11 +155,6 @@ struct CustomSheetView<Content: View>: View {
         .padding(.horizontal, headerPadding)
         .padding(.top, lerp(16, 24, progress))
         .frame(maxWidth: .infinity, minHeight: height, maxHeight: height, alignment: .topLeading)
-        .background {
-            config.headerTint
-                .opacity(0.25 + 0.15 * progress)
-                .background(.regularMaterial)
-        }
         .overlay(alignment: .top) {
             Capsule()
                 .fill(.secondary.opacity(0.6))
@@ -182,9 +184,7 @@ struct CustomSheetView<Content: View>: View {
                 .font(.system(size: 22, weight: .bold))
                 .foregroundStyle(.primary)
                 .frame(width: addButtonSize, height: addButtonSize)
-                .background(config.headerTint.opacity(0.25), in: .circle)
-                .background(.regularMaterial, in: .circle)
-                .shadow(color: .black.opacity(0.25), radius: 6, y: 2)
+                .glassEffect(.regular.tint(config.headerTint.opacity(0.3)).interactive(), in: .circle)
         }
         .buttonStyle(.plain)
         .accessibilityLabel("写真を追加")
