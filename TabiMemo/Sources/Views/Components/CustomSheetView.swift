@@ -24,7 +24,24 @@ struct CustomSheetView<Content: View>: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var sheetHeight: CGFloat = 0
+    @State private var selectedDetent: PresentationDetent
     @State private var scrollOffset: CGFloat = 0
+
+    init(
+        config: Binding<CustomSheetConfig>,
+        title: String,
+        caption: String,
+        headerImage: Image,
+        @ViewBuilder content: () -> Content
+    ) {
+        _config = config
+        self.title = title
+        self.caption = caption
+        self.headerImage = headerImage
+        self.content = content()
+        // 開いた直後はハーフモーダル(中間の高さ)から始める。
+        _selectedDetent = State(initialValue: Self.centerDetent(for: config.wrappedValue))
+    }
 
     private let compactImageSize: CGFloat = 48
     private let horizontalPadding: CGFloat = 16
@@ -51,7 +68,7 @@ struct CustomSheetView<Content: View>: View {
                 sheetHeight = newValue
             }
         }
-        .presentationDetents([.height(config.smallestDetentHeight), centerDetent, largestDetent])
+        .presentationDetents([.height(config.smallestDetentHeight), centerDetent, largestDetent], selection: $selectedDetent)
         .presentationDragIndicator(.hidden)
     }
 
@@ -138,27 +155,39 @@ struct CustomSheetView<Content: View>: View {
         return lerp(compact, expanded, progress)
     }
 
-    private var maxDetentHeight: CGFloat {
-        config.largestDetentHeight.isFinite
-            ? config.largestDetentHeight
-            : windowSize.height - 10
-    }
-
     private func expandProgress(for height: CGFloat) -> CGFloat {
-        let range = maxDetentHeight - config.smallestDetentHeight
+        // ハーフモーダルの高さで、すでにヘッダーが全開(progress = 1)になる。
+        let range = centerHeight - config.smallestDetentHeight
         guard range > 0 else { return 1 }
         return min(max((height - config.smallestDetentHeight) / range, 0), 1)
     }
 
+    private var centerHeight: CGFloat {
+        Self.centerHeight(for: config)
+    }
+
     private var centerDetent: PresentationDetent {
-        .height((maxDetentHeight + config.smallestDetentHeight) / 2)
+        Self.centerDetent(for: config)
+    }
+
+    private static func centerHeight(for config: CustomSheetConfig) -> CGFloat {
+        let maxHeight = config.largestDetentHeight.isFinite
+            ? config.largestDetentHeight
+            : screenSize.height - 10
+        return (maxHeight + config.smallestDetentHeight) / 2
+    }
+
+    private static func centerDetent(for config: CustomSheetConfig) -> PresentationDetent {
+        .height(centerHeight(for: config))
     }
 
     private var largestDetent: PresentationDetent {
         config.largestDetentHeight.isFinite ? .height(config.largestDetentHeight) : .large
     }
 
-    private var windowSize: CGSize {
+    private var windowSize: CGSize { Self.screenSize }
+
+    private static var screenSize: CGSize {
         let scene = UIApplication.shared.connectedScenes
             .compactMap { $0 as? UIWindowScene }
             .first
