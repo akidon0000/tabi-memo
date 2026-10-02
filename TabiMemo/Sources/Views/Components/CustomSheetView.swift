@@ -65,8 +65,7 @@ struct CustomSheetView<Content: View>: View {
             let panelWidth = proxy.size.width - margin * 2 - reserve
             let expandedImageWidth = proxy.size.width - margin * 2 - headerPadding * 2
 
-            GlassEffectContainer(spacing: 4) {
-                ZStack(alignment: .bottomLeading) {
+            ZStack(alignment: .bottomLeading) {
                 panel(
                     progress: progress,
                     fullProgress: fullProgress,
@@ -79,13 +78,16 @@ struct CustomSheetView<Content: View>: View {
                 .padding(.leading, margin)
                 .padding(.bottom, bottomMargin)
 
-                // 広がり始めたら取り除く(ガラスは opacity では消えないので、ビューごと外す)。
-                if let onAdd, progress < 0.12 {
+                // 広がるにつれて薄く小さくして消す。ガラスの opacity が効くよう、パネルとは別のビューにしてある。
+                if let onAdd, progress < 1 {
+                    let fade = 1 - progress
                     addButton(action: onAdd)
+                        .opacity(fade)
+                        .scaleEffect(0.6 + 0.4 * fade)
+                        .allowsHitTesting(progress < 0.3)
                         .frame(maxWidth: .infinity, alignment: .trailing)
                         .padding(.trailing, margin)
                         .padding(.bottom, bottomMargin)
-                }
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
@@ -110,7 +112,7 @@ struct CustomSheetView<Content: View>: View {
         expandedImageWidth: CGFloat,
         heights: (compact: CGFloat, half: CGFloat, full: CGFloat)
     ) -> some View {
-        let headerHeight = headerHeight(progress: progress, compact: heights.compact) + topExtra
+        let headerHeight = headerHeight(progress: progress, fullProgress: fullProgress, compact: heights.compact) + topExtra
 
         return ZStack(alignment: .top) {
             ScrollView(.vertical) {
@@ -126,7 +128,7 @@ struct CustomSheetView<Content: View>: View {
                 scrollOffset = newValue
             }
 
-            header(progress: progress, height: headerHeight, topExtra: topExtra, expandedImageWidth: expandedImageWidth)
+            header(progress: progress, fullProgress: fullProgress, height: headerHeight, topExtra: topExtra, expandedImageWidth: expandedImageWidth)
                 .gesture(dragGesture(heights: heights))
         }
         .frame(width: width, height: height, alignment: .top)
@@ -146,7 +148,7 @@ struct CustomSheetView<Content: View>: View {
 
     // MARK: - Header
 
-    private func header(progress: CGFloat, height: CGFloat, topExtra: CGFloat, expandedImageWidth: CGFloat) -> some View {
+    private func header(progress: CGFloat, fullProgress: CGFloat, height: CGFloat, topExtra: CGFloat, expandedImageWidth: CGFloat) -> some View {
         // 全開後のスクロール量で、画像を最大で半分まで縮める。
         let collapse = min(scrollOffset / 120, 1) * progress
         let imageHeight = lerp(compactImageSize, config.expandedImageHeight * (1 - 0.5 * collapse), progress)
@@ -155,8 +157,8 @@ struct CustomSheetView<Content: View>: View {
         // 畳み側と展開側のタイトルを重ならないようにクロスフェードする。
         let compactOpacity = max(1 - progress * 4, 0)
         let expandedOpacity = max(progress * 2 - 1, 0)
-        // 写真は×ボタンの行の下に置く。
-        let barHeight = closeBarHeight * progress
+        // 写真は×ボタンの行の下に置く(×は全開のときだけなので、行も全開に向けて確保する)。
+        let barHeight = closeBarHeight * fullProgress
 
         return ZStack(alignment: .topLeading) {
             headerImage
@@ -177,8 +179,9 @@ struct CustomSheetView<Content: View>: View {
 
             closeButton
                 .frame(maxWidth: .infinity, alignment: .trailing)
-                .opacity(expandedOpacity)
-                .allowsHitTesting(progress > 0.9)
+                // 全開のときだけ表示する(ハーフでは出さない)。
+                .opacity(fullProgress)
+                .allowsHitTesting(fullProgress > 0.9)
         }
         .padding(.horizontal, headerPadding)
         .padding(.top, lerp((config.smallestDetentHeight - compactImageSize) / 2, 24, progress) + topExtra)
@@ -267,9 +270,9 @@ struct CustomSheetView<Content: View>: View {
         }
     }
 
-    private func headerHeight(progress: CGFloat, compact: CGFloat) -> CGFloat {
+    private func headerHeight(progress: CGFloat, fullProgress: CGFloat, compact: CGFloat) -> CGFloat {
         let collapse = min(scrollOffset / 120, 1) * progress
-        let expanded = closeBarHeight + config.expandedImageHeight * (1 - 0.5 * collapse) + 24 + 12 + 12 + 40
+        let expanded = closeBarHeight * fullProgress + config.expandedImageHeight * (1 - 0.5 * collapse) + 24 + 12 + 12 + 40
         return lerp(compact, expanded, progress)
     }
 
