@@ -217,6 +217,7 @@ struct CustomSheetView<Content: View>: View {
         .contentShape(Rectangle())
     }
 
+    /// iOS 26 純正のガラスの丸ボタン(.glass + .circle)。サイズと押下の反応はシステムに任せる。
     private var closeButton: some View {
         Button {
             withAnimation(.spring(duration: 0.4, bounce: 0.15)) {
@@ -224,12 +225,9 @@ struct CustomSheetView<Content: View>: View {
             }
         } label: {
             Image(systemName: "xmark")
-                .font(.system(size: 14, weight: .bold))
-                .foregroundStyle(.primary)
-                .frame(width: 32, height: 32)
-                .background(.thinMaterial, in: .circle)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.glass)
+        .buttonBorderShape(.circle)
         .accessibilityLabel("閉じる")
     }
 
