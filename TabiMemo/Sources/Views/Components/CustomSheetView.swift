@@ -201,6 +201,8 @@ struct CustomSheetView<Content: View>: View {
 
             closeButton
                 .frame(maxWidth: .infinity, alignment: .trailing)
+                // ヘッダーの上余白(24)を打ち消して、バーと同じ行に置く。
+                .offset(y: -16)
                 // 全開のときだけ表示する(ハーフでは出さない)。
                 .opacity(fullProgress)
                 .allowsHitTesting(fullProgress > 0.9)
@@ -212,7 +214,8 @@ struct CustomSheetView<Content: View>: View {
             Capsule()
                 .fill(.secondary.opacity(0.6))
                 .frame(width: 36, height: 5)
-                .padding(.top, 6 + topExtra)
+                // 全開では×ボタンと同じ行(縦の中心をそろえる)に下げる。
+                .padding(.top, 6 + 14 * fullProgress + topExtra)
         }
         .contentShape(Rectangle())
     }
