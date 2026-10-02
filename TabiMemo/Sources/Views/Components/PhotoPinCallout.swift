@@ -39,7 +39,7 @@ struct PhotoPinCallout: View {
 
 /// 吹き出しの下向きの尖り部分。
 struct CalloutTail: Shape {
-    func path(in rect: CGRect) -> Path {
+    nonisolated func path(in rect: CGRect) -> Path {
         var path = Path()
         path.move(to: CGPoint(x: rect.minX, y: rect.minY))
         path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
