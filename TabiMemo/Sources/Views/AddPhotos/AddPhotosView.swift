@@ -38,17 +38,20 @@ struct AddPhotosView: View {
             }
         }
         .tabViewStyle(.page(indexDisplayMode: .never))
-        .navigationTitle("\(model.currentIndex + 1) / \(model.drafts.count)")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            // 「1/3」と数字で出すと「次へ」が次の写真へ進むように見えるので、点で表す(横にめくれることも伝わる)。
+            ToolbarItem(placement: .principal) {
+                if isMultiple { PageDots(count: model.drafts.count, current: model.currentIndex) }
+            }
             ToolbarItem(placement: .cancellationAction) {
                 Button { confirmDiscard = true } label: { Image(systemName: "xmark") }
                     .accessibilityLabel("閉じる")
             }
             ToolbarItem(placement: .confirmationAction) {
-                // 複数枚のときは、最後のページでも「次へ」。並べ替えの画面で保存する。
+                // 複数枚のときは、最後のページでも「並べ替えへ」。並べ替えの画面で保存する。
                 if isMultiple {
-                    Button("次へ") {
+                    Button("並べ替えへ") {
                         // 並べ替えの最初の並びは日時の順にする(動かすまで日時が変わらないように)。
                         model.sortByDate()
                         isReordering = true
@@ -67,6 +70,24 @@ struct AddPhotosView: View {
             Button("破棄する", role: .destructive, action: onFinish)
         }
         .onChange(of: model.currentID) { model.prefetchSuggestions() }
+    }
+}
+
+private struct PageDots: View {
+    let count: Int
+    let current: Int
+
+    var body: some View {
+        HStack(spacing: 7) {
+            ForEach(0..<count, id: \.self) { index in
+                Circle()
+                    .fill(index == current ? Color.primary : Color.secondary.opacity(0.35))
+                    .frame(width: 8, height: 8)
+            }
+        }
+        .animation(.easeOut(duration: 0.2), value: current)
+        .accessibilityElement()
+        .accessibilityLabel("\(current + 1) / \(count)")
     }
 }
 
