@@ -52,8 +52,7 @@ struct AddPhotosView: View {
                 // 複数枚のときは、最後のページでも「並べ替えへ」。並べ替えの画面で保存する。
                 if isMultiple {
                     Button("並べ替えへ") {
-                        // 並べ替えの最初の並びは日時の順にする(動かすまで日時が変わらないように)。
-                        model.sortByDate()
+                        model.prepareReorder()
                         isReordering = true
                     }
                         .disabled(!model.canSave)
@@ -99,20 +98,27 @@ private struct ReorderView: View {
     var body: some View {
         List {
             Section {
-                ForEach(Array(model.drafts.enumerated()), id: \.element.id) { index, draft in
+                ForEach(Array(model.entries.enumerated()), id: \.element.id) { index, entry in
                     HStack(spacing: 12) {
-                        thumbnail(draft)
+                        thumbnail(entry)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(draft.title.isEmpty ? "タイトルなし" : draft.title)
-                                .foregroundStyle(draft.title.isEmpty ? .secondary : .primary)
+                            HStack(spacing: 6) {
+                                Text(entry.title.isEmpty ? "タイトルなし" : entry.title)
+                                    .foregroundStyle(entry.title.isEmpty ? .secondary : .primary)
+                                if entry.isNew {
+                                    Text("追加").font(.caption2.bold())
+                                        .padding(.horizontal, 6).padding(.vertical, 2)
+                                        .background(.tint.opacity(0.2), in: Capsule())
+                                }
+                            }
                             Text(model.assignedDates[index].formatted(date: .abbreviated, time: .shortened))
                                 .font(.caption).foregroundStyle(.secondary)
                         }
                     }
                 }
-                .onMove { model.drafts.move(fromOffsets: $0, toOffset: $1) }
+                .onMove { model.entries.move(fromOffsets: $0, toOffset: $1) }
             } footer: {
-                Text("長押しして動かすと並べ替えられます。日時は、いまの日時を古い順に並べ直して割り当てます。")
+                Text("地図にすでにある写真も含めて、長押しして動かすと並べ替えられます。日時は、いまの日時を古い順に並べ直して割り当てます。")
             }
         }
         .environment(\.editMode, .constant(.active))
@@ -125,8 +131,8 @@ private struct ReorderView: View {
         }
     }
 
-    @ViewBuilder private func thumbnail(_ draft: PhotoDraft) -> some View {
-        if let data = draft.imageData, let image = UIImage(data: data) {
+    @ViewBuilder private func thumbnail(_ entry: ReorderEntry) -> some View {
+        if let data = entry.imageData, let image = UIImage(data: data) {
             Image(uiImage: image)
                 .resizable().scaledToFill()
                 .frame(width: 56, height: 56)
@@ -163,12 +169,39 @@ private struct DraftPage: View {
                 .frame(maxHeight: 280)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
                 .frame(maxWidth: .infinity)
+                .overlay { pageArrows }
         } else {
             RoundedRectangle(cornerRadius: 16)
                 .fill(.quaternary)
                 .frame(height: 200)
                 .overlay { if !draft.loadFailed { ProgressView() } }
         }
+    }
+
+    /// 写真の左右に薄く出す矢印。横にめくれることを伝える。押しても前後へ移れる。
+    private var pageArrows: some View {
+        let index = model.drafts.firstIndex { $0.id == draft.id } ?? 0
+        return HStack {
+            if index > 0 { arrow("chevron.left", to: index - 1) }
+            Spacer()
+            if index < model.drafts.count - 1 { arrow("chevron.right", to: index + 1) }
+        }
+        .padding(.horizontal, 8)
+    }
+
+    private func arrow(_ name: String, to index: Int) -> some View {
+        Button {
+            withAnimation { model.currentID = model.drafts[index].id }
+        } label: {
+            Image(systemName: name)
+                .font(.system(size: 22, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.7))
+                .shadow(color: .black.opacity(0.35), radius: 3)
+                .frame(width: 44, height: 64)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(name == "chevron.left" ? "前の写真" : "次の写真")
     }
 
     private var failedNotice: some View {

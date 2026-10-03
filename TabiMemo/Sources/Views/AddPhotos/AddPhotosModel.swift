@@ -27,6 +27,52 @@ final class PhotoDraft: Identifiable {
     var isReady: Bool { imageData != nil && coordinate != nil }
 }
 
+/// 並べ替え画面の1行。地図にすでにある写真と、これから保存する写真が同じ並びに入る。
+enum ReorderEntry: Identifiable {
+    case existing(TripPhoto)
+    case new(PhotoDraft)
+
+    var id: UUID {
+        switch self {
+        case .existing(let photo): photo.id
+        case .new(let draft): draft.id
+        }
+    }
+
+    var imageData: Data? {
+        switch self {
+        case .existing(let photo): photo.imageData
+        case .new(let draft): draft.imageData
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .existing(let photo): photo.title
+        case .new(let draft): draft.title
+        }
+    }
+
+    var isNew: Bool {
+        if case .new = self { true } else { false }
+    }
+
+    var takenAt: Date {
+        get {
+            switch self {
+            case .existing(let photo): photo.takenAt
+            case .new(let draft): draft.takenAt
+            }
+        }
+        nonmutating set {
+            switch self {
+            case .existing(let photo): photo.takenAt = newValue
+            case .new(let draft): draft.takenAt = newValue
+            }
+        }
+    }
+}
+
 /// 複数枚の追加の流れ全体。ピッカーで選んだ写真を読み込み、まとめて保存する。
 @Observable
 final class AddPhotosModel: Identifiable {
@@ -36,10 +82,14 @@ final class AddPhotosModel: Identifiable {
 
     /// 位置の初期値を求める材料(すでにある写真)と、それも無いときに使う地図の中心。
     private let existingPoints: [PhotoLocationGuess.Point]
+    private let existingPhotos: [TripPhoto]
+    /// 並べ替え画面の並び(すでにある写真 + 新しい写真)。
+    var entries: [ReorderEntry] = []
     let fallbackCenter: CLLocationCoordinate2D
 
-    init(count: Int, existingPoints: [PhotoLocationGuess.Point], fallbackCenter: CLLocationCoordinate2D) {
-        self.existingPoints = existingPoints
+    init(count: Int, existingPhotos: [TripPhoto], fallbackCenter: CLLocationCoordinate2D) {
+        self.existingPhotos = existingPhotos
+        existingPoints = existingPhotos.map { PhotoLocationGuess.Point(date: $0.takenAt, coordinate: $0.coordinate) }
         self.fallbackCenter = fallbackCenter
         let drafts = (0..<count).map { _ in PhotoDraft() }
         self.drafts = drafts
@@ -101,17 +151,19 @@ final class AddPhotosModel: Identifiable {
         if currentID == draft.id { currentID = drafts.first?.id }
     }
 
-    func sortByDate() {
-        drafts.sort { $0.takenAt < $1.takenAt }
+    /// 並べ替え画面に入る。最初の並びは日時の順(動かすまで日時が変わらないように)。
+    func prepareReorder() {
+        entries = (existingPhotos.map(ReorderEntry.existing) + drafts.map(ReorderEntry.new))
+            .sorted { $0.takenAt < $1.takenAt }
     }
 
     /// 並べ替え画面で、各行に当てはまる日時。いまの日時を古い順に並べ、並びの順に割り当てる。
     /// 写真は日時の順で並ぶので、並べ替えは日時の割り当てを替えることで表す。
-    var assignedDates: [Date] { drafts.map(\.takenAt).sorted() }
+    var assignedDates: [Date] { entries.map(\.takenAt).sorted() }
 
     func save(into trip: Trip, context: ModelContext) {
         let dates = assignedDates
-        for (draft, date) in zip(drafts, dates) { draft.takenAt = date }
+        for (entry, date) in zip(entries, dates) { entry.takenAt = date }
         for draft in drafts {
             guard let data = draft.imageData, let coordinate = draft.coordinate else { continue }
             let photo = TripPhoto(

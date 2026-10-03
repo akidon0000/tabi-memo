@@ -130,11 +130,10 @@ struct TripDetailView: View {
 
     /// ピッカーが閉じたあと、詳細入力のモーダルを(読み込み中の状態で)すぐ開く。
     private func startAddFlow(with items: [PhotosPickerItem]) {
-        let existing = trip.photos.map { PhotoLocationGuess.Point(date: $0.takenAt, coordinate: $0.coordinate) }
         let fallback = visibleRegion?.center
             ?? trip.photos.first?.coordinate
             ?? CLLocationCoordinate2D(latitude: 35.6812, longitude: 139.7671)
-        let model = AddPhotosModel(count: items.count, existingPoints: existing, fallbackCenter: fallback)
+        let model = AddPhotosModel(count: items.count, existingPhotos: trip.photos, fallbackCenter: fallback)
         Task {
             try? await Task.sleep(for: .milliseconds(400))
             addFlow = AddFlow(model: model, items: items)
