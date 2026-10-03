@@ -1,4 +1,5 @@
 import MapKit
+import PhotosUI
 import SwiftData
 import SwiftUI
 
@@ -11,6 +12,16 @@ struct TripDetailView: View {
     @State private var cameraPosition: MapCameraPosition = .automatic
     /// いまの地図の表示範囲。スワイプで移動するとき、拡大率を保ったまま中心だけ動かすのに使う。
     @State private var visibleRegion: MKCoordinateRegion?
+    @State private var showPhotoPicker = false
+    @State private var pickedItems: [PhotosPickerItem] = []
+    @State private var addFlow: AddFlow?
+
+    /// 写真の追加の流れ。ピッカーで選んだ項目と、その入力状態を一組で持つ。
+    private struct AddFlow: Identifiable {
+        let model: AddPhotosModel
+        let items: [PhotosPickerItem]
+        var id: AddPhotosModel.ID { model.id }
+    }
 
     var body: some View {
         Map(position: $cameraPosition) {
@@ -81,6 +92,15 @@ struct TripDetailView: View {
             }
         }
         .animation(.easeOut(duration: 0.3), value: zoomedPhoto?.id)
+        .photosPicker(isPresented: $showPhotoPicker, selection: $pickedItems, maxSelectionCount: nil, matching: .images)
+        .onChange(of: pickedItems) { _, items in
+            guard !items.isEmpty else { return }
+            pickedItems = []
+            startAddFlow(with: items)
+        }
+        .sheet(item: $addFlow) { flow in
+            AddPhotosView(model: flow.model, items: flow.items, trip: trip) { addFlow = nil }
+        }
     }
 
     /// 撮影順で隣の写真(step: 前 -1 / 次 +1)。端なら nil。
@@ -105,7 +125,20 @@ struct TripDetailView: View {
     }
 
     private func addPhoto() {
-        // TODO: 写真の追加(未実装)
+        showPhotoPicker = true
+    }
+
+    /// ピッカーが閉じたあと、詳細入力のモーダルを(読み込み中の状態で)すぐ開く。
+    private func startAddFlow(with items: [PhotosPickerItem]) {
+        let existing = trip.photos.map { PhotoLocationGuess.Point(date: $0.takenAt, coordinate: $0.coordinate) }
+        let fallback = visibleRegion?.center
+            ?? trip.photos.first?.coordinate
+            ?? CLLocationCoordinate2D(latitude: 35.6812, longitude: 139.7671)
+        let model = AddPhotosModel(count: items.count, existingPoints: existing, fallbackCenter: fallback)
+        Task {
+            try? await Task.sleep(for: .milliseconds(400))
+            addFlow = AddFlow(model: model, items: items)
+        }
     }
 }
 
