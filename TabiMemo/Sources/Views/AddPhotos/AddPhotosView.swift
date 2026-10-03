@@ -12,38 +12,105 @@ struct AddPhotosView: View {
 
     @Environment(\.modelContext) private var modelContext
     @State private var confirmDiscard = false
+    @State private var isReordering = false
+
+    private var isMultiple: Bool { model.drafts.count > 1 }
 
     var body: some View {
         NavigationStack {
-            TabView(selection: $model.currentID) {
-                ForEach(model.drafts) { draft in
-                    DraftPage(draft: draft, model: model)
-                        .tag(Optional(draft.id))
+            editPages
+                .navigationDestination(isPresented: $isReordering) {
+                    ReorderView(model: model) {
+                        model.save(into: trip, context: modelContext)
+                        onFinish()
+                    }
                 }
+        }
+        .interactiveDismissDisabled()
+        .task { await model.load(items) }
+    }
+
+    private var editPages: some View {
+        TabView(selection: $model.currentID) {
+            ForEach(model.drafts) { draft in
+                DraftPage(draft: draft, model: model)
+                    .tag(Optional(draft.id))
             }
-            .tabViewStyle(.page(indexDisplayMode: .never))
-            .navigationTitle("\(model.currentIndex + 1) / \(model.drafts.count)")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button { confirmDiscard = true } label: { Image(systemName: "xmark") }
-                        .accessibilityLabel("閉じる")
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("すべて保存") {
+        }
+        .tabViewStyle(.page(indexDisplayMode: .never))
+        .navigationTitle("\(model.currentIndex + 1) / \(model.drafts.count)")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button { confirmDiscard = true } label: { Image(systemName: "xmark") }
+                    .accessibilityLabel("閉じる")
+            }
+            ToolbarItem(placement: .confirmationAction) {
+                // 複数枚のときは、最後のページでも「次へ」。並べ替えの画面で保存する。
+                if isMultiple {
+                    Button("次へ") {
+                        // 並べ替えの最初の並びは日時の順にする(動かすまで日時が変わらないように)。
+                        model.sortByDate()
+                        isReordering = true
+                    }
+                        .disabled(!model.canSave)
+                } else {
+                    Button("保存") {
                         model.save(into: trip, context: modelContext)
                         onFinish()
                     }
                     .disabled(!model.canSave)
                 }
             }
-            .confirmationDialog("入力した内容を破棄しますか?", isPresented: $confirmDiscard, titleVisibility: .visible) {
-                Button("破棄する", role: .destructive, action: onFinish)
-            }
-            .onChange(of: model.currentID) { model.prefetchSuggestions() }
         }
-        .interactiveDismissDisabled()
-        .task { await model.load(items) }
+        .confirmationDialog("入力した内容を破棄しますか?", isPresented: $confirmDiscard, titleVisibility: .visible) {
+            Button("破棄する", role: .destructive, action: onFinish)
+        }
+        .onChange(of: model.currentID) { model.prefetchSuggestions() }
+    }
+}
+
+/// 保存前に写真の順番を並べ替える画面。並びは日時の割り当てとして保存される。
+private struct ReorderView: View {
+    @Bindable var model: AddPhotosModel
+    var onSave: () -> Void
+
+    var body: some View {
+        List {
+            Section {
+                ForEach(Array(model.drafts.enumerated()), id: \.element.id) { index, draft in
+                    HStack(spacing: 12) {
+                        thumbnail(draft)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(draft.title.isEmpty ? "タイトルなし" : draft.title)
+                                .foregroundStyle(draft.title.isEmpty ? .secondary : .primary)
+                            Text(model.assignedDates[index].formatted(date: .abbreviated, time: .shortened))
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                .onMove { model.drafts.move(fromOffsets: $0, toOffset: $1) }
+            } footer: {
+                Text("長押しして動かすと並べ替えられます。日時は、いまの日時を古い順に並べ直して割り当てます。")
+            }
+        }
+        .environment(\.editMode, .constant(.active))
+        .navigationTitle("順番")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .confirmationAction) {
+                Button("すべて保存", action: onSave)
+            }
+        }
+    }
+
+    @ViewBuilder private func thumbnail(_ draft: PhotoDraft) -> some View {
+        if let data = draft.imageData, let image = UIImage(data: data) {
+            Image(uiImage: image)
+                .resizable().scaledToFill()
+                .frame(width: 56, height: 56)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+        }
     }
 }
 

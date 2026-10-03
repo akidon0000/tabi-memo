@@ -101,7 +101,17 @@ final class AddPhotosModel: Identifiable {
         if currentID == draft.id { currentID = drafts.first?.id }
     }
 
+    func sortByDate() {
+        drafts.sort { $0.takenAt < $1.takenAt }
+    }
+
+    /// 並べ替え画面で、各行に当てはまる日時。いまの日時を古い順に並べ、並びの順に割り当てる。
+    /// 写真は日時の順で並ぶので、並べ替えは日時の割り当てを替えることで表す。
+    var assignedDates: [Date] { drafts.map(\.takenAt).sorted() }
+
     func save(into trip: Trip, context: ModelContext) {
+        let dates = assignedDates
+        for (draft, date) in zip(drafts, dates) { draft.takenAt = date }
         for draft in drafts {
             guard let data = draft.imageData, let coordinate = draft.coordinate else { continue }
             let photo = TripPhoto(
