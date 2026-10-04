@@ -282,11 +282,16 @@ private struct PhotoZoomView: View {
             }
         }
         .overlay(alignment: .topTrailing) {
-            Button { dismiss() } label: { Image(systemName: "xmark") }
-                .buttonStyle(.glass)
-                .buttonBorderShape(.circle)
-                .padding()
-                .accessibilityLabel("閉じる")
+            // パネル全開の閉じるボタンと同じ大きさ(28pt)にそろえる。
+            Button { dismiss() } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 12, weight: .semibold))
+                    .frame(width: 28, height: 28)
+            }
+            .buttonStyle(.glass)
+            .buttonBorderShape(.circle)
+            .padding()
+            .accessibilityLabel("閉じる")
         }
     }
 

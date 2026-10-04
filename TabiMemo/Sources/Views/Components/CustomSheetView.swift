@@ -250,14 +250,17 @@ struct CustomSheetView<Content: View>: View {
                             .allowsHitTesting(detent == .full)
                     }
                     .overlay(alignment: .top) {
-                        // 全開では、ボタンの見た目は上の層にあり、タッチはこの透明なコピーが受ける(スクロールと一緒に動く)。
+                        // 全開では、見た目は上の層のボタンが担い、押すのは、ここに置く透明なボタン2つ(スクロールと一緒に動く)。画像のタップ領域より手前に置く。
                         if detent == .full, onEdit != nil {
-                            actionButtons()
-                                .opacity(0.01)
-                                .frame(maxWidth: .infinity, alignment: .trailing)
-                                .padding(.horizontal, headerPadding)
-                                .padding(.trailing, 8)
-                                .padding(.top, actionButtonsTop(barHeight: closeBarHeight, imageHeight: ownImageHeight) + 24 + topExtra)
+                            HStack(spacing: 0) {
+                                Button { onEdit?() } label: { Color.clear.frame(width: 48, height: actionButtonHeight).contentShape(Rectangle()) }
+                                Button { onDelete?() } label: { Color.clear.frame(width: 48, height: actionButtonHeight).contentShape(Rectangle()) }
+                            }
+                            .buttonStyle(.plain)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                            .padding(.horizontal, headerPadding)
+                            .padding(.trailing, 8)
+                            .padding(.top, actionButtonsTop(barHeight: closeBarHeight, imageHeight: ownImageHeight) + 24 + topExtra)
                         }
                     }
             }
@@ -401,7 +404,7 @@ struct CustomSheetView<Content: View>: View {
                     .padding(.trailing, 8)
                     .padding(.top, actionButtonsTop(barHeight: barHeight, imageHeight: imageHeight))
                     .opacity(expandedOpacity)
-                    .allowsHitTesting(progress > 0.9)
+                    .allowsHitTesting(progress > 0.9 && detent != .full)
             }
         }
         .padding(.horizontal, headerPadding)
@@ -533,8 +536,9 @@ struct CustomSheetView<Content: View>: View {
                 detent = .compact
             }
         } label: {
-            Image(systemName: "xmark")
-                .font(.system(size: 12, weight: .semibold))
+            // 全開では「×」ではなく、下へ畳む向きの「∨」にする。
+            Image(systemName: "chevron.down")
+                .font(.system(size: 12, weight: .bold))
                 .frame(width: closeButtonSize, height: closeButtonSize)
         }
         .buttonStyle(.glass)
