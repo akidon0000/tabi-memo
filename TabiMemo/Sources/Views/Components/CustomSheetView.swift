@@ -430,7 +430,8 @@ struct CustomSheetView<Content: View>: View {
                 Capsule()
                     .fill(.secondary.opacity(0.6))
                     .frame(width: 36, height: 5)
-                    .padding(.top, 6 + topExtra)
+                    // 全開に向かうほど、右の×と同じ高さ(上端をそろえる)へ寄せる。
+                    .padding(.top, lerp(6, 8 + (44 - closeButtonSize) / 2, fullProgress) + topExtra)
                     // 全開で「下にスワイプできる」ことを知らせるときに、下へ揺らす。
                     .offset(y: barNudge)
                     .allowsHitTesting(false)
