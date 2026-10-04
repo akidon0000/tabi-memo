@@ -10,9 +10,7 @@ final class TripPhoto {
     var takenAt: Date
     /// EXIF/現在地から位置を取得できず、ユーザーが地図タップで手動配置した場合に true。
     var isLocationManuallyPlaced: Bool
-    /// 写真のタイトル。
     var title: String = ""
-    /// 写真に添えるメモ。
     var memo: String = ""
     /// 削除した日時。nil なら地図に出る。値があれば「最近削除した項目」へ隠し、一定期間後に完全に消す。
     var deletedAt: Date?
