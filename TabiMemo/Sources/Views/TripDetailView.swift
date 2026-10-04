@@ -110,7 +110,7 @@ struct TripDetailView: View {
             startAddFlow(with: items)
         }
         .task { trip.purgeExpiredPhotos(in: modelContext) }
-        .confirmationDialog("この写真は、ライブラリから削除されます。", isPresented: $confirmDelete, titleVisibility: .visible) {
+        .confirmationDialog("この写真を削除しますか?", isPresented: $confirmDelete, titleVisibility: .visible) {
             Button("写真を削除", role: .destructive, action: deleteSelectedPhoto)
         } message: {
             Text("削除した写真は「最近削除した項目」に\(PhotoRetention.days)日間残ります。")

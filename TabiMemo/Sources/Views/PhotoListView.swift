@@ -51,7 +51,7 @@ struct PhotoListView: View {
             }
             .sheet(item: $editing) { EditPhotoView(photo: $0) }
             .confirmationDialog(
-                "この写真は、ライブラリから削除されます。",
+                "この写真を削除しますか?",
                 isPresented: Binding(get: { photoToDelete != nil }, set: { if !$0 { photoToDelete = nil } }),
                 titleVisibility: .visible
             ) {
