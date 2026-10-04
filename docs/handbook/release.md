@@ -1,0 +1,57 @@
+# リリース(TestFlight)
+
+- 読み手: このリポジトリで作業する自分・エージェント
+- 目的: 実機テスト用に TabiMemo を TestFlight へ配信する現在の手順
+- 共通部分(asc の採用理由・認証): [hq の handbook/ios-release.md](https://github.com/akidon0000/hq/blob/main/docs/handbook/ios-release.md)。ここには TabiMemo 固有の値だけ置く。参考にした実装は meguri リポジトリの `docs/handbook/release.md`
+
+## このアプリの値
+
+| 項目 | 値 |
+|---|---|
+| Bundle ID | `com.akidon0000.tabimemo`(ASC の Bundle ID 登録済み、ID `3DBK34BGQX`) |
+| Team ID | `XSC9AJPSP3` |
+| App Store Connect App ID | **未作成**(下の手順0のあとに `asc apps list` で控える) |
+| 署名 | 手動。プロファイル `IOS_APP_STORE-20261004`(期限 2027-05-03) |
+
+## 手順
+
+### 0. アプリレコードを作る(ユーザーが自分で行う。未実施)
+
+`asc web apps create` は Apple ID のパスワードと 2FA が要るので、自分のターミナルで実行する(エージェントは行えない)。
+
+```bash
+asc web apps create --name "旅メモ" --bundle-id "com.akidon0000.tabimemo" \
+  --sku "tabimemo-ios" --primary-locale "ja"
+asc apps list    # App ID(数値)を控える
+```
+
+名前が既に使われていると、自動で別名になる(meguri がそうだった)。その場合は `asc apps rename` で直す。
+
+### 1. 署名の準備(完了済み。プロファイルが切れたとき・別のマシンで行う)
+
+```bash
+asc signing fetch --bundle-id com.akidon0000.tabimemo --profile-type IOS_APP_STORE \
+  --create-missing --output ./signing
+asc profiles local install --path signing/IOS_APP_STORE-*.mobileprovision --force
+```
+
+新しいプロファイル名になったら `scripts/ExportOptions.plist` の `provisioningProfiles` を合わせる。`signing/` は git に入れない。
+
+### 2. アップロード
+
+```bash
+scripts/testflight.sh <APP_ID>                              # アップロードのみ
+scripts/testflight.sh <APP_ID> --group "Internal" --notify  # 内部テスターへ配信
+```
+
+`tuist generate` → archive → export → upload の順に行う。ビルド番号は asc が自動で採番する(`manageAppVersionAndBuildNumber`)。バージョンは `Project.swift` の `MARKETING_VERSION`。
+
+## 確認済み(2026-10-04)
+
+ローカルで archive と export まで成功(`build/TabiMemo.ipa`)。**アップロードは未実施**(手順0が済んでいないため)。
+
+## 注意
+
+- アプリアイコンは仮の画像(グラデーションにピン)。差し替えるときは `AppIcon.appiconset/icon-1024.png`(1024px・透過なし)。
+- Foundation Models / PCC による提案は、実機で初めて動作を確認できる。TestFlight で確認すること。
+- iOS 26 向けのままで、PCC と画像入力は iOS 27 以降。非対応の OS では提案欄が出ない。

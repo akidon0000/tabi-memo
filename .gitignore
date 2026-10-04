@@ -24,3 +24,7 @@ xcuserdata/
 .build/
 Derived/
 Tuist/.build/
+
+# Release artifacts / signing
+build/
+signing/

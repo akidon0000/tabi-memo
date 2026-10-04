@@ -11,6 +11,10 @@ let project = Project(
         "IPHONEOS_DEPLOYMENT_TARGET": "26.0",
         "SWIFT_STRICT_CONCURRENCY": "complete",
         "SWIFT_DEFAULT_ACTOR_ISOLATION": "MainActor",
+        // 配信用。バージョンは Info.plist から $(...) で参照する(リテラルだと上書きが効かない)。
+        "DEVELOPMENT_TEAM": "XSC9AJPSP3",
+        "MARKETING_VERSION": "1.0",
+        "CURRENT_PROJECT_VERSION": "1",
     ]),
     targets: [
         .target(
@@ -21,6 +25,9 @@ let project = Project(
             deploymentTargets: .iOS("26.0"),
             infoPlist: .extendingDefault(with: [
                 "CFBundleDisplayName": "旅メモ",
+                "CFBundleShortVersionString": "$(MARKETING_VERSION)",
+                "CFBundleVersion": "$(CURRENT_PROJECT_VERSION)",
+                "ITSAppUsesNonExemptEncryption": false,
                 "UILaunchScreen": [:],
                 "NSLocationWhenInUseUsageDescription": "トリップ記録中の現在地を地図に表示するために使用します",
                 "NSLocationAlwaysAndWhenInUseUsageDescription": "トリップ記録中はアプリを閉じていても経路を記録し続けるために使用します",
