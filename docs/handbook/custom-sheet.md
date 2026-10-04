@@ -35,7 +35,17 @@ CustomSheetView(
 
 ## 構成の要点
 
-[CustomSheetView.swift](https://github.com/akidon0000/tabi-memo/blob/c36cb71a5fd9165ce3bf1b5b7b44c2258fd6360c/TabiMemo/Sources/Views/Components/CustomSheetView.swift)
+[Shared/Components/CustomSheet/](https://github.com/akidon0000/tabi-memo/blob/c14f2dbf583e102cdced6be74d7f01dc6e25eb70/TabiMemo/Sources/Shared/Components/CustomSheet)。ファイルは役割ごとに分けている。
+
+| ファイル | 中身 |
+|---|---|
+| `CustomSheetView.swift` | 引数・状態・定数と `body` |
+| `+Layout.swift` / `SheetLayout.swift` | 段階ごとの高さ、写真の高さ、余白などの計算。1回の描画ぶんを `SheetLayout` にまとめる |
+| `+Panel.swift` | パネル本体、スクロールする中身、角丸 |
+| `+Header.swift` | 写真とタイトル、上に固定する行(バーと閉じるボタン) |
+| `+Controls.swift` | ペン・ゴミ箱、閉じるボタン、追加ボタン、先読みカード |
+| `+Gestures.swift` | 縦ドラッグ(段階)と左右スワイプ(前後の写真) |
+| `+Nudge.swift` | バーのタップと、全開での揺らし |
 
 - **進行度が2つある。** `progress`（コンパクト→ハーフで 0→1）がヘッダーの変形を、`fullProgress`（ハーフ→全開で 0→1）が白い背景・余白・角丸の消え方を決める。
 - **ヘッダーは2層。** 写真・タイトルはスクロール量だけ上へ流れる層。バー・× と白い背景は上に固定された層（写真がこの下をくぐる）。
@@ -47,5 +57,5 @@ CustomSheetView(
 - **全開ではヘッダーのタッチを無効にする。** 下のスクロールに通すため。縦ドラッグは上部の固定行だけが受ける。
 - **白い背景はスクロール側ではなく、先読みカードの下に敷く。** スクロール側に敷くと、後ろの先読みカードが隠れる。
 - **ガラス（`glassEffect`）は `opacity` で消えない場面がある。** 追加ボタンは `GlassEffectContainer` に入れない。
-- **全開の上端**は、ウィンドウの `safeAreaInsets.top` を読んで引く（親が `ignoresSafeArea` のため `GeometryReader` からは取れない）。
+- **全開の上端**は、ウィンドウの `safeAreaInsets.top` を読んで引く(`DeviceMetrics.windowSafeAreaTop`)（親が `ignoresSafeArea` のため `GeometryReader` からは取れない）。
 - **画面角の半径は非公開キー。** → [ADR 0004](../adr/0004-private-corner-radius.md)

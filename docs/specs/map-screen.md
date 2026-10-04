@@ -2,7 +2,7 @@
 
 - 読み手: 実装者・確認者（本人・エージェント）
 - 目的: 地図画面とその下部パネルの挙動を、スクリーンショットつきで定義する
-- 対象: [TripDetailView.swift](https://github.com/akidon0000/tabi-memo/blob/c36cb71a5fd9165ce3bf1b5b7b44c2258fd6360c/TabiMemo/Sources/Views/TripDetailView.swift) / [CustomSheetView.swift](https://github.com/akidon0000/tabi-memo/blob/c36cb71a5fd9165ce3bf1b5b7b44c2258fd6360c/TabiMemo/Sources/Views/Components/CustomSheetView.swift)
+- 対象: [Features/TripMap/](https://github.com/akidon0000/tabi-memo/blob/c14f2dbf583e102cdced6be74d7f01dc6e25eb70/TabiMemo/Sources/Features/TripMap) / [Shared/Components/CustomSheet/](https://github.com/akidon0000/tabi-memo/blob/c14f2dbf583e102cdced6be74d7f01dc6e25eb70/TabiMemo/Sources/Shared/Components/CustomSheet)
 - 撮影: iPhone 18 Pro（iOS 26）シミュレーター、デモデータ（渋谷→代々木公園、写真3枚）。撮影日 2026-10-03
 - 設計の理由: [ADR](../adr/README.md)
 
@@ -79,7 +79,7 @@
 ## 6. 写真のメモ
 
 - 写真の日時の下に「メモ」欄がある。タップして直接編集できる（複数行）。
-- 内容は `TripPhoto.memo` に保存される。
+- 内容は `Photo.memo` に保存される。
 
 ## 7. 左右スワイプで前後の写真へ（ハーフ・全開）
 
