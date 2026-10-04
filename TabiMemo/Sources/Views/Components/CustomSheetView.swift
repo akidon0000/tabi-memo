@@ -621,7 +621,7 @@ struct CustomSheetView<Content: View>: View {
     }
 
     /// 端末の画面角の半径。公開 API が無いため、取れなければ近い値を使う。
-    private static var deviceCornerRadius: CGFloat {
+    static var deviceCornerRadius: CGFloat {
         let screen = UIApplication.shared.connectedScenes
             .compactMap { $0 as? UIWindowScene }
             .first?.screen

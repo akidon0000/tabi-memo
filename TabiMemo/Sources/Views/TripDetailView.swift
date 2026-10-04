@@ -235,7 +235,10 @@ private struct PhotoZoomView: View {
 
     var body: some View {
         ZStack {
-            Color.black.opacity(1 - min(max(offset.height, 0) / 500, 0.6)).ignoresSafeArea()
+            // 黒い背景は、端末の画面角と同じ丸みの角丸にする。ふわっと拡大して出るとき、角丸のカードとして広がる。
+            RoundedRectangle(cornerRadius: CustomSheetView<EmptyView>.deviceCornerRadius, style: .continuous)
+                .fill(Color.black.opacity(1 - min(max(offset.height, 0) / 500, 0.6)))
+                .ignoresSafeArea()
             photo.image
                 .resizable()
                 .scaledToFit()
