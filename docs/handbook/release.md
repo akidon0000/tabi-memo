@@ -50,6 +50,9 @@ scripts/testflight.sh <APP_ID> --group "Internal" --notify  # 内部テスター
 
 `scripts/testflight.sh 6818975282` で Build 1(version 1.0)のアップロードまで成功(`processingState: VALID`)。内部グループ `Internal`(全ビルドにアクセス)を作成し、テスター `a@art.jp` を追加済み(招待メール送信、`akidon0000@gmail.com` は `Tester(s) cannot be assigned` で追加できなかった)。内部テスターは処理済みの全ビルドを自動で使える。
 
+- 2026-10-05: Build 2(version 1.0、リファクタリングと FB-1〜FB-9)をアップロード(`--notify` なし)。`processingState: VALID`。
+- SwiftLint のビルドツールプラグインを使うため、archive に `-skipPackagePluginValidation` を渡している(`scripts/testflight.sh`)。
+
 ## 注意
 
 - アプリアイコンは仮の画像(グラデーションにピン)。差し替えるときは `AppIcon.appiconset/icon-1024.png`(1024px・透過なし)。
