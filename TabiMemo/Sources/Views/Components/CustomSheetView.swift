@@ -77,6 +77,8 @@ struct CustomSheetView<Content: View>: View {
     private let closeBarHeight: CGFloat = 44
     private let compactMargin: CGFloat = 16
     private let actionButtonHeight: CGFloat = 40
+    /// 全開の×。中心は右上の「…」(44pt)と同じ位置にそろえる。
+    private let closeButtonSize: CGFloat = 34
     private let expandedMargin: CGFloat = 8
 
     var body: some View {
@@ -438,7 +440,8 @@ struct CustomSheetView<Content: View>: View {
                 closeButton
                     .frame(maxWidth: .infinity, alignment: .trailing)
                     .padding(.horizontal, headerPadding)
-                    .padding(.top, 8 + topExtra)
+                    .padding(.trailing, (44 - closeButtonSize) / 2)
+                    .padding(.top, 8 + (44 - closeButtonSize) / 2 + topExtra)
                     // 全開のときだけ表示する(ハーフでは出さない)。
                     .opacity(fullProgress)
                     .allowsHitTesting(fullProgress > 0.9)
@@ -529,7 +532,8 @@ struct CustomSheetView<Content: View>: View {
             }
         } label: {
             Image(systemName: "xmark")
-                .frame(width: 44, height: 44)
+                .font(.system(size: 14, weight: .semibold))
+                .frame(width: closeButtonSize, height: closeButtonSize)
         }
         .buttonStyle(.glass)
         .buttonBorderShape(.circle)
