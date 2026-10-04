@@ -39,7 +39,8 @@ xcodebuild test -scheme TabiMemo -destination 'id=<シミュレーターの UDID
 - `project.xcproj` は JSON（末尾のカンマを許す）。コメントは書けないので、設定の理由はこの handbook か ADR に書く。
 - アプリの Info.plist は `TabiMemo/Info.plist`。フレームワークとテストの Info.plist はビルド時に生成する（`GENERATE_INFOPLIST_FILE`）。
 - スキームは `TabiMemo.xcodeproj/xcshareddata/xcschemes/` に置いた共有スキーム。テスト対象の追加はここを書き換える。
-- SwiftLint のバージョンは `project.xcproj` の `packages`、解決結果は `project.xcworkspace/xcshareddata/swiftpm/Package.resolved`。
+- SwiftLint のバージョンは `project.xcproj` の `packages` で 1つに固定している(`"version": "0.65.1"`)。`Package.resolved` は git に入れていない(下の注意)。
+- 注意: このマシンでは、`project.xcworkspace/xcshareddata/swiftpm/Package.resolved` を置いても、数秒で消える(2026-10-05 確認。何が消しているかは未特定)。バージョンを固定しているので、ビルドの再現性には影響しない。
 
 ## 起動と確認
 
