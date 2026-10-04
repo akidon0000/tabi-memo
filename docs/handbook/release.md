@@ -10,7 +10,7 @@
 |---|---|
 | Bundle ID | `com.akidon0000.tabimemo`(ASC の Bundle ID 登録済み、ID `3DBK34BGQX`) |
 | Team ID | `XSC9AJPSP3` |
-| App Store Connect App ID | `6818975282`(ASC 上の名前は自動で「旅メモ - tabimemo」になった) |
+| App Store Connect App ID | `6818975282`(ASC 上の名前は「旅メモ - tabimemo」。「旅メモ」は他アカウントが使用中で改名できなかった。端末の表示名は影響なし) |
 | 署名 | 手動。プロファイル `IOS_APP_STORE-20261004`(期限 2027-05-03) |
 
 ## 手順
@@ -48,7 +48,7 @@ scripts/testflight.sh <APP_ID> --group "Internal" --notify  # 内部テスター
 
 ## 確認済み(2026-10-04)
 
-`scripts/testflight.sh 6818975282` で Build 1(version 1.0)のアップロードまで成功(`processingState: VALID`)。TestFlight のグループとテスターは未作成。
+`scripts/testflight.sh 6818975282` で Build 1(version 1.0)のアップロードまで成功(`processingState: VALID`)。内部グループ `Internal`(全ビルドにアクセス)を作成し、テスター `a@art.jp` を追加済み(招待メール送信、`akidon0000@gmail.com` は `Tester(s) cannot be assigned` で追加できなかった)。内部テスターは処理済みの全ビルドを自動で使える。
 
 ## 注意
 
