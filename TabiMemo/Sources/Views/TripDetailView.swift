@@ -15,6 +15,9 @@ struct TripDetailView: View {
     @State private var showPhotoPicker = false
     @State private var pickedItems: [PhotosPickerItem] = []
     @State private var addFlow: AddFlow?
+    @State private var confirmDelete = false
+    @State private var showRecentlyDeleted = false
+    @Environment(\.modelContext) private var modelContext
 
     /// 写真の追加の流れ。ピッカーで選んだ項目と、その入力状態を一組で持つ。
     private struct AddFlow: Identifiable {
@@ -31,7 +34,7 @@ struct TripDetailView: View {
                     .map(\.coordinate))
                     .stroke(Color.accentColor, lineWidth: 3)
             }
-            ForEach(trip.photos) { photo in
+            ForEach(trip.activePhotos) { photo in
                 Annotation(
                     photo.takenAt.formatted(date: .omitted, time: .shortened),
                     coordinate: photo.coordinate,
@@ -83,6 +86,7 @@ struct TripDetailView: View {
             .ignoresSafeArea()
             .animation(.spring(duration: 0.4), value: selectedPhoto == nil)
         }
+        .overlay(alignment: .topTrailing) { moreMenu }
         // 拡大表示は下からせり上げず、後ろからふわっと(薄い・小さい状態から)出す。
         .overlay {
             if let photo = zoomedPhoto {
@@ -98,6 +102,15 @@ struct TripDetailView: View {
             pickedItems = []
             startAddFlow(with: items)
         }
+        .task { trip.purgeExpiredPhotos(in: modelContext) }
+        .confirmationDialog("この写真は、ライブラリから削除されます。", isPresented: $confirmDelete, titleVisibility: .visible) {
+            Button("写真を削除", role: .destructive, action: deleteSelectedPhoto)
+        } message: {
+            Text("削除した写真は「最近削除した項目」に\(PhotoRetention.days)日間残ります。")
+        }
+        .sheet(isPresented: $showRecentlyDeleted) {
+            RecentlyDeletedView(trip: trip)
+        }
         .sheet(item: $addFlow) { flow in
             AddPhotosView(model: flow.model, items: flow.items, trip: trip) { addFlow = nil }
         }
@@ -105,7 +118,7 @@ struct TripDetailView: View {
 
     /// 撮影順で隣の写真(step: 前 -1 / 次 +1)。端なら nil。
     private func neighbor(_ step: Int, of photo: TripPhoto) -> TripPhoto? {
-        let sorted = trip.photos.sorted { $0.takenAt < $1.takenAt }
+        let sorted = trip.activePhotos.sorted { $0.takenAt < $1.takenAt }
         guard let index = sorted.firstIndex(where: { $0.id == photo.id }),
               sorted.indices.contains(index + step) else { return nil }
         return sorted[index + step]
@@ -124,6 +137,16 @@ struct TripDetailView: View {
         }
     }
 
+    /// 選んでいる写真を「最近削除した項目」へ移す。隣の写真(次があれば次、なければ前)へ切り替わり、最後の1枚なら閉じる。
+    private func deleteSelectedPhoto() {
+        guard let photo = selectedPhoto else { return }
+        let next = neighbor(1, of: photo) ?? neighbor(-1, of: photo)
+        photo.deletedAt = .now
+        try? modelContext.save()
+        selectedPhoto = next
+        if let next { focusMap(on: next) }
+    }
+
     private func addPhoto() {
         showPhotoPicker = true
     }
@@ -131,9 +154,9 @@ struct TripDetailView: View {
     /// ピッカーが閉じたあと、詳細入力のモーダルを(読み込み中の状態で)すぐ開く。
     private func startAddFlow(with items: [PhotosPickerItem]) {
         let fallback = visibleRegion?.center
-            ?? trip.photos.first?.coordinate
+            ?? trip.activePhotos.first?.coordinate
             ?? CLLocationCoordinate2D(latitude: 35.6812, longitude: 139.7671)
-        let model = AddPhotosModel(count: items.count, existingPhotos: trip.photos, fallbackCenter: fallback)
+        let model = AddPhotosModel(count: items.count, existingPhotos: trip.activePhotos, fallbackCenter: fallback)
         Task {
             try? await Task.sleep(for: .milliseconds(400))
             addFlow = AddFlow(model: model, items: items)
@@ -142,6 +165,30 @@ struct TripDetailView: View {
 }
 
 private extension TripDetailView {
+    /// 右上に常に出す「…」。写真を選んでいるときだけ「写真を削除」が加わる。
+    var moreMenu: some View {
+        Menu {
+            Button { showRecentlyDeleted = true } label: {
+                Label("最近削除した項目", systemImage: "trash")
+            }
+            if selectedPhoto != nil {
+                Button(role: .destructive) { confirmDelete = true } label: {
+                    Label("写真を削除", systemImage: "trash")
+                }
+            }
+        } label: {
+            Image(systemName: "ellipsis")
+                .font(.system(size: 17, weight: .semibold))
+                .frame(width: 44, height: 44)
+                .contentShape(Circle())
+        }
+        .buttonStyle(.glass)
+        .buttonBorderShape(.circle)
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+        .accessibilityLabel("メニュー")
+    }
+
     /// パネルがないときの、右下の円形の追加ボタン。パネルのコンパクト時のボタンと同じ位置に置く。
     var addPhotoButton: some View {
         Button(action: addPhoto) {

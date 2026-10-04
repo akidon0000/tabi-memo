@@ -14,6 +14,8 @@ final class TripPhoto {
     var title: String = ""
     /// 写真に添えるメモ。
     var memo: String = ""
+    /// 削除した日時。nil なら地図に出る。値があれば「最近削除した項目」へ隠し、一定期間後に完全に消す。
+    var deletedAt: Date?
     var trip: Trip?
 
     init(

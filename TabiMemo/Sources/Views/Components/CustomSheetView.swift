@@ -406,8 +406,9 @@ struct CustomSheetView<Content: View>: View {
                     .allowsHitTesting(false)
                     .frame(maxHeight: .infinity, alignment: .top)
 
+                // 右上には、地図画面の「…」メニューが常に出るので、閉じるは左上に置く。
                 closeButton
-                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, headerPadding)
                     .padding(.top, 8 + topExtra)
                     // 全開のときだけ表示する(ハーフでは出さない)。
