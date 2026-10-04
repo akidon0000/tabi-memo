@@ -28,8 +28,10 @@ extension CustomSheetView {
         // 写真は×ボタンの行の下に置く(×は全開のときだけなので、行も全開に向けて確保する)。
         let barHeight = closeBarHeight * layout.fullProgress
         let expandedTextTop = barHeight + textImageHeight + 12
-        // 左右スワイプ中は、動いた量に応じて文字を薄くする。入れ替わったあと、次の文字が濃くなって出る。
-        let textFade = (1 - swipeReveal) * textReveal
+        // ハーフの左右スワイプ中は、動いた量に応じて文字を薄くする。入れ替わったあと、次の文字が濃くなって出る。
+        // 全開では文字も写真と一緒に動くので、薄くしない。
+        let textFade = (slidesPages ? 1 : 1 - swipeReveal) * textReveal
+        let textOffset = slidesPages ? pageOffset : 0
         // 畳み側と展開側のタイトルを重ならないようにクロスフェードする。
         let compactOpacity = max(1 - progress * 4, 0)
         let expandedOpacity = max(progress * 2 - 1, 0) * textFade
@@ -38,16 +40,21 @@ extension CustomSheetView {
             headerPhoto(layout, height: imageHeight)
                 .padding(.top, barHeight)
 
-            titleBlock(fontSize: 16)
+            titleBlock(title: title, caption: caption, fontSize: 16)
                 .frame(height: compactImageSize, alignment: .center)
                 .padding(.leading, compactImageSize + 12)
                 .opacity(compactOpacity * textFade)
 
-            titleBlock(fontSize: 24)
+            titleBlock(title: title, caption: caption, fontSize: 24)
                 .padding(.top, expandedTextTop)
+                .offset(x: textOffset)
                 .opacity(expandedOpacity)
 
-            neighborTitles(expandedTop: expandedTextTop, progress: progress, compactOpacity: compactOpacity)
+            if slidesPages {
+                slidingNeighbor(layout, barHeight: barHeight)
+            } else {
+                neighborTitles(expandedTop: expandedTextTop, progress: progress, compactOpacity: compactOpacity)
+            }
 
             // 編集・削除ボタン(写真の右下)。
             if onEdit != nil {
@@ -55,6 +62,7 @@ extension CustomSheetView {
                     .frame(maxWidth: .infinity, alignment: .trailing)
                     .padding(.trailing, 8)
                     .padding(.top, actionButtonsTop(barHeight: barHeight, imageHeight: imageHeight))
+                    .offset(x: textOffset)
                     .opacity(expandedOpacity)
                     .allowsHitTesting(progress > 0.9 && detent != .full)
             }
@@ -77,7 +85,7 @@ extension CustomSheetView {
             .frame(width: lerp(compactImageSize, layout.expandedImageWidth, progress), height: height)
             .clipShape(RoundedRectangle(cornerRadius: radius))
             // 左右スワイプで動くのは写真だけ。文字は動かさず、移動が終わってから切り替わる。
-            .modifier(PageCard(offset: pageOffset, opacity: pageOpacity, scale: pageScale))
+            .modifier(PageCard(offset: pageOffset, scale: pageScale, rotates: !slidesPages))
             .onTapGesture { if progress > 0.5 { onImageTap?() } }
     }
 
@@ -96,6 +104,26 @@ extension CustomSheetView {
                 .frame(height: compactImageSize, alignment: .center)
                 .padding(.leading, compactImageSize + 12)
                 .opacity(compactOpacity * swipeReveal)
+        }
+    }
+
+    /// 全開のスライドで、隣のページの写真と日時。手前の写真と同じ層・同じ描き方で隣に並べ、一緒に滑らせる。
+    /// スクロールする前の位置で見せる(入れ替わると一番上から表示するため)。
+    @ViewBuilder
+    private func slidingNeighbor(_ layout: SheetLayout, barHeight: CGFloat) -> some View {
+        if pageOffset != 0, let snap = neighbor?(peekStep) {
+            ZStack(alignment: .topLeading) {
+                snap.image
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: layout.expandedImageWidth, height: layout.nextImageHeight)
+                    .clipShape(RoundedRectangle(cornerRadius: 20))
+                    .padding(.top, barHeight)
+                titleBlock(title: snap.title, caption: snap.caption, fontSize: 24)
+                    .padding(.top, barHeight + layout.nextImageHeight + 12)
+            }
+            .offset(x: neighborOffset(layout), y: scrollOffset)
+            .allowsHitTesting(false)
         }
     }
 

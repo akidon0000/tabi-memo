@@ -27,7 +27,10 @@ extension TripMapView {
                 RecentlyDeletedView(viewModel: dependencies.makeRecentlyDeletedViewModel(tripID: trip.id))
             }
             .sheet(item: $addFlow) { flow in
-                AddPhotosView(viewModel: flow.viewModel, items: flow.items) { addFlow = nil }
+                AddPhotosView(viewModel: flow.viewModel, items: flow.items) { saved in
+                    addFlow = nil
+                    if saved { fitsAfterAdding = true }
+                }
             }
     }
 

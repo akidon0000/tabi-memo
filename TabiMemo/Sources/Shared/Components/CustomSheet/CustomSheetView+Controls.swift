@@ -31,7 +31,7 @@ extension CustomSheetView {
         barHeight + imageHeight - 8 - actionButtonHeight
     }
 
-    /// 後ろに見せる前後の写真。写真だけを先読みする。文字(日時・メモ)は、飛んで入れ替わったあとに切り替わる。
+    /// ハーフで後ろに見せる前後の写真。スワイプ量に応じて大きくする。薄くはしない(FB-9)。
     func peekCard(_ snap: PageSnapshot, layout: SheetLayout, topPad: CGFloat) -> some View {
         // 文字は動かさないので、後ろの写真も手前と同じ大きさにそろえる(縦横比が違えば切り抜く)。
         let imageHeight = lerp(compactImageSize, layout.nextImageHeight, layout.progress)
@@ -45,17 +45,12 @@ extension CustomSheetView {
             .padding(.top, topPad)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .scaleEffect(0.94 + 0.06 * swipeReveal, anchor: .top)
-            .opacity(0.4 + 0.6 * swipeReveal)
             .allowsHitTesting(false)
     }
 
     /// iOS 26 純正のガラスの丸ボタン(.glass + .circle)。サイズと押下の反応はシステムに任せる。
     var closeButton: some View {
-        Button {
-            withAnimation(.spring(duration: 0.4, bounce: 0.15)) {
-                detent = .compact
-            }
-        } label: {
+        Button(action: collapse) {
             // 全開では「×」ではなく、下へ畳む向きの「∨」にする。
             Image(systemName: "chevron.down")
                 .font(.system(size: 12, weight: .bold))
@@ -66,7 +61,7 @@ extension CustomSheetView {
         .accessibilityLabel("閉じる")
     }
 
-    func titleBlock(fontSize: CGFloat) -> some View {
+    func titleBlock(title: String, caption: String, fontSize: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title)
                 .font(.system(size: fontSize, weight: .bold))

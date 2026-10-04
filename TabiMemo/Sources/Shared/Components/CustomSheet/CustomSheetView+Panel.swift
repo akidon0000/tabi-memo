@@ -9,8 +9,10 @@ extension CustomSheetView {
             // ハーフまでは透明(ガラス越し)、全開で白。スクロール側ではなくここに敷いて、後ろの先読みカードの下にも白が来るようにする。
             Color(.systemBackground).opacity(layout.fullProgress)
 
-            // 前後の写真を後ろに先読みして出す。スワイプ量に応じて手前へ寄ってくる。
-            if pageOffset != 0, let snap = neighbor?(peekStep) {
+            scrollContent(layout, headerHeight: headerHeight)
+
+            // ハーフで、前後の写真を手前の写真の後ろに先読みして出す。全開ではヘッダー層に並べる(+Header)。
+            if !slidesPages, pageOffset != 0, let snap = neighbor?(peekStep) {
                 let topPad = lerp(
                     (config.smallestDetentHeight - compactImageSize) / 2,
                     24 + closeBarHeight * layout.fullProgress,
@@ -19,12 +21,10 @@ extension CustomSheetView {
                 peekCard(snap, layout: layout, topPad: topPad)
             }
 
-            scrollContent(layout, headerHeight: headerHeight)
-
             header(layout, height: headerHeight)
         }
         // 左右スワイプで前後の写真へ(ハーフ・全開)。指に追従して傾き、一定以上動かすと飛んでいって次の写真が入る(Tinder 風)。
-        .simultaneousGesture(swipeGesture)
+        .simultaneousGesture(swipeGesture(pageWidth: layout.panelWidth))
         .frame(width: layout.panelWidth, height: layout.panelHeight, alignment: .top)
         .clipShape(shape)
         // Liquid Glass。ヘッダーの色を tint として乗せる。
@@ -35,15 +35,10 @@ extension CustomSheetView {
     private func scrollContent(_ layout: SheetLayout, headerHeight: CGFloat) -> some View {
         ScrollView(.vertical) {
             content
-                .opacity((1 - swipeReveal) * textReveal * layout.fullProgress)
-                // スワイプ先のメモも、スワイプ中から同じ位置に重ねて、動いた量に応じて濃くする。
-                .overlay(alignment: .top) {
-                    if pageOffset != 0, let snap = neighbor?(peekStep) {
-                        snap.content
-                            .opacity(swipeReveal * layout.fullProgress)
-                            .allowsHitTesting(false)
-                    }
-                }
+                // 全開では写真と一緒に横へ動く。ハーフでは動かさず、スワイプ量に応じて薄くする。
+                .offset(x: slidesPages ? pageOffset : 0)
+                .opacity((slidesPages ? 1 : 1 - swipeReveal) * textReveal * layout.fullProgress)
+                .overlay(alignment: .top) { neighborContent(layout) }
                 .padding(.top, headerHeight)
                 .overlay(alignment: .top) {
                     // 全開ではヘッダー層がタッチを通すので、写真の位置に透明なタップ領域を置く。
@@ -61,9 +56,30 @@ extension CustomSheetView {
         .scrollPosition($scrollPosition)
         .scrollDisabled(detent != .full)
         .onScrollGeometryChange(for: CGFloat.self) { geometry in
-            max(geometry.contentOffset.y + geometry.contentInsets.top, 0)
-        } action: { _, newValue in
-            scrollOffset = newValue
+            geometry.contentOffset.y + geometry.contentInsets.top
+        } action: { _, offset in
+            scrollOffset = max(offset, 0)
+            // 全開で、いちばん上からさらに下へ引いたら、パネルを閉じる(FB-8)。
+            if offset < -pullToCloseDistance, detent == .full, isScrollInteracting { collapse() }
+        }
+        .onScrollPhaseChange { _, phase in
+            isScrollInteracting = phase == .interacting
+        }
+    }
+
+    /// スワイプ先のメモ。全開では隣のページの位置に置いて一緒に滑らせる。ハーフでは同じ位置に重ね、動いた量に応じて濃くする。
+    @ViewBuilder
+    private func neighborContent(_ layout: SheetLayout) -> some View {
+        if pageOffset != 0, let snap = neighbor?(peekStep) {
+            snap.content
+                .opacity((slidesPages ? 1 : swipeReveal) * layout.fullProgress)
+                // 写真の高さの違いだけ上下をずらし、スクロールする前の位置で見せる(入れ替わると一番上から表示するため)。
+                .offset(
+                    x: slidesPages ? neighborOffset(layout) : 0,
+                    y: slidesPages ? layout.nextImageHeight - layout.ownImageHeight + scrollOffset : 0
+                )
+                .allowsHitTesting(false)
+                .transition(.identity)
         }
     }
 

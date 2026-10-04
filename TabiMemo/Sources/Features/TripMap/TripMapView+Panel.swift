@@ -22,7 +22,7 @@ extension TripMapView {
         CustomSheetView(
             config: $sheetConfig,
             title: photo.takenAt.formatted(date: .abbreviated, time: .shortened),
-            caption: photo.isLocationManuallyPlaced ? "位置は手動で指定されました" : "",
+            caption: caption(photo),
             headerImage: photo.image,
             headerAspectRatio: photo.aspectRatio,
             onAdd: addPhoto,
@@ -41,9 +41,14 @@ extension TripMapView {
         )
     }
 
+    private func caption(_ photo: Photo) -> String {
+        photo.isLocationManuallyPlaced ? "位置は手動で指定されました" : ""
+    }
+
     private func snapshot(_ photo: Photo) -> PageSnapshot {
         PageSnapshot(
             title: photo.takenAt.formatted(date: .abbreviated, time: .shortened),
+            caption: caption(photo),
             image: photo.image,
             aspectRatio: photo.aspectRatio,
             content: AnyView(PhotoMemoView(photo: photo))

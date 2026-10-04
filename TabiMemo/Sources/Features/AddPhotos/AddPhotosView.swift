@@ -5,7 +5,8 @@ import SwiftUI
 struct AddPhotosView: View {
     @Bindable var viewModel: AddPhotosViewModel
     let items: [PhotosPickerItem]
-    var onFinish: () -> Void
+    /// 閉じるとき。保存したら true、破棄したら false。
+    var onFinish: (_ saved: Bool) -> Void
 
     @State private var confirmDiscard = false
     @State private var isReordering = false
@@ -42,7 +43,7 @@ struct AddPhotosView: View {
             ToolbarItem(placement: .confirmationAction) { confirmButton }
         }
         .confirmationDialog("入力した内容を破棄しますか?", isPresented: $confirmDiscard, titleVisibility: .visible) {
-            Button("破棄する", role: .destructive, action: onFinish)
+            Button("破棄する", role: .destructive) { onFinish(false) }
         }
         .onChange(of: viewModel.currentID) { viewModel.prefetchSuggestions() }
     }
@@ -64,6 +65,6 @@ struct AddPhotosView: View {
 
     private func save() {
         viewModel.save()
-        onFinish()
+        onFinish(true)
     }
 }

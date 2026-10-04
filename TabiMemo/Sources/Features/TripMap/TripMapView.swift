@@ -25,6 +25,10 @@ struct TripMapView: View {
     @State var editingPhoto: Photo?
     /// パネルの全開への進み具合。全開では右上の「…」を消して、パネルの閉じるボタンに譲る。
     @State var panelFullProgress: CGFloat = 0
+    /// 地図の大きさ(pt)。ピンの重なりの判定に使う。
+    @State var mapSize: CGSize = .zero
+    /// 写真を保存した直後。次にトリップが更新されたら、写真が全部収まるよう地図を動かす。
+    @State var fitsAfterAdding = false
 
     /// 写真の追加の流れ。ピッカーで選んだ項目と、その入力状態を一組で持つ。
     struct AddFlow: Identifiable {
@@ -41,7 +45,7 @@ struct TripMapView: View {
         NavigationStack {
             if let trip = viewModel.trip {
                 content(trip)
-            } else {
+            } else if viewModel.hasLoaded {
                 ContentUnavailableView("トリップがありません", systemImage: "map")
             }
         }
@@ -65,6 +69,11 @@ struct TripMapView: View {
             .animation(.easeOut(duration: 0.3), value: zoomedPhoto?.id)
             .onChange(of: viewModel.selectedPhoto == nil) { _, isClosed in
                 if isClosed { panelFullProgress = 0 }
+            }
+            .onChange(of: trip.activePhotos.map(\.id)) {
+                guard fitsAfterAdding else { return }
+                fitsAfterAdding = false
+                fitAllPhotos(of: trip)
             }
         return withSheets(screen, trip: trip)
     }

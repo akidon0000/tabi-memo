@@ -4,7 +4,7 @@ import SwiftUI
 /// コンパクト時はバナーと円形の追加ボタンを完全に別のビューとして横並びにできる。
 ///
 /// ファイルの分け方: 大きさの計算は +Layout、パネル本体は +Panel、写真とタイトルは +Header、
-/// ボタン類は +Controls、ドラッグとスワイプは +Gestures、全開の揺らしは +Nudge。
+/// ボタン類は +Controls、ドラッグとスワイプは +Gestures、段階の切り替えと全開の揺らしは +Detent。
 struct CustomSheetView<Content: View>: View {
     @Binding var config: CustomSheetConfig
     var title: String
@@ -35,11 +35,11 @@ struct CustomSheetView<Content: View>: View {
 
     // 別ファイルの extension から触るので private にしない。
     @State var detent: Detent = .compact
-    @GestureState var dragTranslation: CGFloat = 0
+    /// 縦ドラッグの移動量。指を離したら、段階の切り替えと同じアニメーションで 0 に戻す(FB-4)。
+    @State var dragTranslation: CGFloat = 0
     @State var scrollOffset: CGFloat = 0
     @State var barNudge: CGFloat = 0
     @State var pageOffset: CGFloat = 0
-    @State var pageOpacity: CGFloat = 1
     @State var pageScale: CGFloat = 1
     /// 入れ替わった直後の文字の濃さ(0→1)。
     @State var textReveal: CGFloat = 1
@@ -49,6 +49,8 @@ struct CustomSheetView<Content: View>: View {
     /// 指がヘッダーに触れている間 true。揺らしの判定に使う(task から読めるよう @State に写す)。
     @GestureState var isPressing = false
     @State var isTouching = false
+    /// 全開の中身を指でスクロールしている間 true。下へ引いて閉じる判定に使う。
+    @State var isScrollInteracting = false
 
     let compactImageSize: CGFloat = 40
     let headerPadding: CGFloat = 16
@@ -64,6 +66,8 @@ struct CustomSheetView<Content: View>: View {
     /// 全開の上の行(バーと×)を置く、パネル上端からの距離。
     let closeRowTop: CGFloat = 8
     let expandedMargin: CGFloat = 8
+    /// 全開で、いちばん上からさらにこの距離だけ下へ引くと、パネルを閉じる(FB-8)。
+    let pullToCloseDistance: CGFloat = 70
 
     var body: some View {
         GeometryReader { proxy in

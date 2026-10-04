@@ -28,7 +28,7 @@ struct PhotoPinCallout: View {
 
     @ViewBuilder
     private var thumbnail: some View {
-        if let uiImage = UIImage(data: photo.imageData) {
+        if let uiImage = PhotoImageCache.uiImage(for: photo) {
             Image(uiImage: uiImage)
                 .resizable()
                 .scaledToFill()

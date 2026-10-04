@@ -29,7 +29,8 @@ extension CustomSheetView {
             margin: margin,
             bottomMargin: lerp(28, 8, progress) * edge,
             expandedImageWidth: expandedImageWidth,
-            expandedImageHeight: lerp(ownImageHeight, nextImageHeight, swipeReveal),
+            // 全開では写真と文字が一緒に横へ動くので、文字の位置はスワイプ先へ寄せない。
+            expandedImageHeight: slidesPages ? ownImageHeight : lerp(ownImageHeight, nextImageHeight, swipeReveal),
             ownImageHeight: ownImageHeight,
             nextImageHeight: nextImageHeight
         )
@@ -37,6 +38,15 @@ extension CustomSheetView {
 
     /// スワイプ量に応じた、スワイプ先の見え具合(0〜1)。
     var swipeReveal: CGFloat { min(abs(pageOffset) / 160, 1) }
+
+    /// 全開では、前後の写真へ移るとき、写真・日時・メモを1枚のページとして一緒に横へ動かす(FB-7)。
+    /// ハーフでは、写真だけが傾きながら飛んでいく(ADR 0005)。
+    var slidesPages: Bool { detent == .full }
+
+    /// 全開のスライドで、隣のページを置く横の位置。次のページは右から、前のページは左から入ってくる。
+    func neighborOffset(_ layout: SheetLayout) -> CGFloat {
+        pageOffset + CGFloat(peekStep) * layout.panelWidth
+    }
 
     func height(for detent: Detent, in heights: SheetLayout.Heights) -> CGFloat {
         switch detent {

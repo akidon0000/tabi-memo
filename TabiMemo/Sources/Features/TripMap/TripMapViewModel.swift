@@ -6,6 +6,8 @@ import Observation
 @Observable
 final class TripMapViewModel {
     private(set) var trip: Trip?
+    /// 保存先から最初の値を受け取ったら true。それまでは「トリップがありません」を出さない。
+    private(set) var hasLoaded = false
     /// パネルに表示中の写真。別のピンをタップしても、パネルは閉じずに中身だけ差し替える。
     var selectedPhotoID: Photo.ID?
 
@@ -34,6 +36,7 @@ final class TripMapViewModel {
     func start() async {
         for await trip in observeCurrentTrip.execute() {
             self.trip = trip
+            hasLoaded = true
             if let trip, !hasPurged {
                 hasPurged = true
                 try? purgeExpiredPhotos.execute(in: trip)

@@ -12,6 +12,13 @@ extension CustomSheetView {
         withAnimation(.spring(duration: 0.4, bounce: 0.15)) { detent = next }
     }
 
+    /// 畳んでコンパクトに戻す(閉じるボタン、全開で下へ引いたとき)。
+    func collapse() {
+        withAnimation(.spring(duration: 0.4, bounce: 0.15)) {
+            detent = .compact
+        }
+    }
+
     /// 全開の間、一定間隔でバーを下へ揺らして、下にスワイプで畳めることを伝える。
     func runNudgeLoop() async {
         barNudge = 0
