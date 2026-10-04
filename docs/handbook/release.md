@@ -54,4 +54,5 @@ scripts/testflight.sh <APP_ID> --group "Internal" --notify  # 内部テスター
 
 - アプリアイコンは仮の画像(グラデーションにピン)。差し替えるときは `AppIcon.appiconset/icon-1024.png`(1024px・透過なし)。
 - Foundation Models / PCC による提案は、実機で初めて動作を確認できる。TestFlight で確認すること。
-- iOS 26 向けのままで、PCC と画像入力は iOS 27 以降。非対応の OS では提案欄が出ない。
+- 配信対象は iOS 27 以降([ADR 0009](../adr/0009-clean-architecture.md))。Apple Intelligence が使えない端末では提案欄が出ない。
+- Build 2 以降は、保存データの形が変わったため、Build 1 で入れた写真は引き継がれない。

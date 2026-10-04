@@ -6,7 +6,7 @@
 ## 前提
 
 - Tuist でプロジェクトを生成する。`TabiMemo.xcodeproj` / `.xcworkspace` / `Derived/` は git 管理外。
-- 対象は iOS 26 以降（`Project.swift`）。確認は iPhone 18 Pro のシミュレーターで行っている。
+- 対象は iOS 27 以降（`Project.swift`）。コードの構成は [architecture.md](architecture.md)。確認は iPhone 18 Pro のシミュレーターで行っている。
 - bundle id: `com.akidon0000.tabimemo`
 
 ## ビルド
@@ -14,8 +14,19 @@
 ```bash
 tuist generate --no-open   # ファイルを増減したら必ず
 xcodebuild -scheme TabiMemo -configuration Debug \
-  -destination 'id=<シミュレーターの UDID>' build
+  -destination 'id=<シミュレーターの UDID>' -skipPackagePluginValidation build
 ```
+
+- `-skipPackagePluginValidation` は、SwiftLint のビルドツールプラグインを確認なしで動かすために付ける。付けないと、コマンドラインのビルドが止まる。
+- SwiftLint の警告・エラーはビルドの出力に出る。エラーがあるとビルドは失敗する。
+
+## テスト
+
+```bash
+xcodebuild test -scheme TabiMemo -destination 'id=<シミュレーターの UDID>' -skipPackagePluginValidation
+```
+
+`TabiMemo` スキームで、`DomainTests` / `DataLayerTests` / `TabiMemoTests` をまとめて動かす。層ごとに動かすときは、スキームを `Domain` / `DataLayer` にする。
 
 ファイルを削除・追加したあとに `tuist generate` を忘れると、`Build input files cannot be found` で失敗する。
 
@@ -33,7 +44,7 @@ xcodebuild -scheme TabiMemo -configuration Debug \
 xcrun simctl uninstall <UDID> com.akidon0000.tabimemo
 ```
 
-SwiftData のスキーマを変えた（`TripPhoto` にプロパティを足したなど）ときも同じ。
+SwiftData のスキーマを変えた（`PhotoRecord` にプロパティを足したなど）ときも同じ。
 
 ## スクリーンショット
 

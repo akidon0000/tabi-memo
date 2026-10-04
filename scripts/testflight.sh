@@ -25,7 +25,7 @@ tuist generate --no-open
 
 PROJECT=TabiMemo.xcodeproj
 SCHEME=TabiMemo
-VERSION=$(xcodebuild -project "$PROJECT" -scheme "$SCHEME" -showBuildSettings 2>/dev/null \
+VERSION=$(xcodebuild -project "$PROJECT" -scheme "$SCHEME" -skipPackagePluginValidation -showBuildSettings 2>/dev/null \
   | awk -F' = ' '/ MARKETING_VERSION = /{print $2; exit}')
 
 exec asc publish testflight \
@@ -38,6 +38,7 @@ exec asc publish testflight \
   --archive-path "build/$SCHEME.xcarchive" \
   --ipa-path "build/$SCHEME.ipa" \
   --archive-xcodebuild-flag -allowProvisioningUpdates \
+  --archive-xcodebuild-flag -skipPackagePluginValidation \
   --export-xcodebuild-flag -allowProvisioningUpdates \
   --wait \
   --pretty \

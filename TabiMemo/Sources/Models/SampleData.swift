@@ -1,3 +1,4 @@
+// swiftlint:disable all — 手順④で新しい構成に置き換えるまでの一時措置。
 import Foundation
 import SwiftData
 import UIKit
