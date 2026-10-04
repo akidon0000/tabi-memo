@@ -12,14 +12,14 @@ struct RecentlyDeletedView: View {
         NavigationStack {
             Group {
                 if trip.deletedPhotos.isEmpty {
-                    ContentUnavailableView("最近削除した項目はありません", systemImage: "trash")
+                    ContentUnavailableView("最近取り除いた項目はありません", systemImage: "trash")
                 } else {
                     List(trip.deletedPhotos) { photo in
                         row(photo)
                     }
                 }
             }
-            .navigationTitle("最近削除した項目")
+            .navigationTitle("最近取り除いた項目")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {

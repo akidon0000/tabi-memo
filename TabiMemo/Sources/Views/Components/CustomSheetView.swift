@@ -475,7 +475,7 @@ struct CustomSheetView<Content: View>: View {
                     .frame(width: 48, height: actionButtonHeight)
                     .contentShape(Rectangle())
             }
-            .accessibilityLabel("削除")
+            .accessibilityLabel("取り除く")
         }
         .buttonStyle(.plain)
         .glassEffect(.regular.interactive(), in: .capsule)

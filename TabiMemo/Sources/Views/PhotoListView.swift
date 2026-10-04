@@ -51,16 +51,16 @@ struct PhotoListView: View {
             }
             .sheet(item: $editing) { EditPhotoView(photo: $0) }
             .confirmationDialog(
-                "この写真を削除しますか?",
+                "この写真を取り除きますか?",
                 isPresented: Binding(get: { photoToDelete != nil }, set: { if !$0 { photoToDelete = nil } }),
                 titleVisibility: .visible
             ) {
-                Button("写真を削除", role: .destructive) {
+                Button("写真を取り除く", role: .destructive) {
                     if let photo = photoToDelete { delete(photo) }
                     photoToDelete = nil
                 }
             } message: {
-                Text("削除した写真は「最近削除した項目」に\(PhotoRetention.days)日間残ります。")
+                Text("取り除いた写真は「最近取り除いた項目」に\(PhotoRetention.days)日間残ります。")
             }
         }
     }
@@ -73,7 +73,7 @@ struct PhotoListView: View {
                 Button { open(photo) } label: { row(photo) }
                     .buttonStyle(.plain)
                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                        Button(role: .destructive) { photoToDelete = photo } label: { Label("削除", systemImage: "trash") }
+                        Button(role: .destructive) { photoToDelete = photo } label: { Label("取り除く", systemImage: "trash") }
                     }
                     .swipeActions(edge: .leading) {
                         Button { editing = photo } label: { Label("編集", systemImage: "pencil") }
@@ -133,7 +133,7 @@ struct PhotoListView: View {
                     }
                     .contextMenu {
                         Button { editing = photo } label: { Label("編集", systemImage: "pencil") }
-                        Button(role: .destructive) { photoToDelete = photo } label: { Label("削除", systemImage: "trash") }
+                        Button(role: .destructive) { photoToDelete = photo } label: { Label("取り除く", systemImage: "trash") }
                     }
                 }
             }

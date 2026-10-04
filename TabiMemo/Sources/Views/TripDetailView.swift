@@ -110,10 +110,10 @@ struct TripDetailView: View {
             startAddFlow(with: items)
         }
         .task { trip.purgeExpiredPhotos(in: modelContext) }
-        .confirmationDialog("この写真を削除しますか?", isPresented: $confirmDelete, titleVisibility: .visible) {
-            Button("写真を削除", role: .destructive, action: deleteSelectedPhoto)
+        .confirmationDialog("この写真を取り除きますか?", isPresented: $confirmDelete, titleVisibility: .visible) {
+            Button("写真を取り除く", role: .destructive, action: deleteSelectedPhoto)
         } message: {
-            Text("削除した写真は「最近削除した項目」に\(PhotoRetention.days)日間残ります。")
+            Text("取り除いた写真は「最近取り除いた項目」に\(PhotoRetention.days)日間残ります。")
         }
         .sheet(isPresented: $showEdit) {
             if let photo = selectedPhoto { EditPhotoView(photo: photo) }
@@ -191,7 +191,7 @@ private extension TripDetailView {
                 Label("写真の一覧", systemImage: "list.bullet")
             }
             Button { showRecentlyDeleted = true } label: {
-                Label("最近削除した項目", systemImage: "trash")
+                Label("最近取り除いた項目", systemImage: "trash")
             }
         } label: {
             Image(systemName: "ellipsis")
