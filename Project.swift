@@ -87,7 +87,7 @@ let project = Project(
             ]),
             sources: ["TabiMemo/Sources/**"],
             resources: ["TabiMemo/Resources/**"],
-            dependencies: [swiftLint]
+            dependencies: [.target(name: "Domain"), .target(name: "DataLayer"), swiftLint]
         ),
         .target(
             name: "TabiMemoTests",
@@ -96,8 +96,19 @@ let project = Project(
             bundleId: "com.akidon0000.tabimemo.tests",
             deploymentTargets: .iOS(deploymentTarget),
             infoPlist: .default,
-            sources: ["TabiMemo/Tests/**"],
-            dependencies: [.target(name: "TabiMemo")]
+            sources: ["TabiMemo/Tests/**", "TestSupport/**"],
+            dependencies: [.target(name: "TabiMemo"), .target(name: "Domain")]
+        ),
+    ],
+    schemes: [
+        // テストは層ごとの3ターゲットを、このスキーム1つでまとめて動かす。
+        .scheme(
+            name: "TabiMemo",
+            shared: true,
+            buildAction: .buildAction(targets: ["TabiMemo"]),
+            testAction: .targets(["DomainTests", "DataLayerTests", "TabiMemoTests"]),
+            runAction: .runAction(executable: "TabiMemo"),
+            archiveAction: .archiveAction(configuration: .release)
         ),
     ]
 )

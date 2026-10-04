@@ -6,9 +6,12 @@ import SwiftData
 /// SwiftData に保存したトリップを、Domain の `Trip` として流す。
 /// `ResultsObserver` が保存のたびに結果を更新し、`Observations` がそれを拾って流し直す。
 public final class SwiftDataTripRepository: TripRepository {
+    /// 保存先を持っておく(ModelContainer を手放さないように)。
+    private let store: SwiftDataStore
     private let observer: ResultsObserver<TripRecord, Never>
 
     public init(store: SwiftDataStore) throws {
+        self.store = store
         observer = try ResultsObserver(
             sortBy: [SortDescriptor(\TripRecord.startedAt, order: .reverse)],
             modelContext: store.context

@@ -4,10 +4,12 @@ import SwiftData
 
 /// 写真の書き込み。どの操作も、最後に保存まで行う。
 public final class SwiftDataPhotoRepository: PhotoRepository {
-    private let context: ModelContext
+    /// 保存先を持っておく(ModelContainer を手放さないように)。
+    private let store: SwiftDataStore
+    private var context: ModelContext { store.context }
 
     public init(store: SwiftDataStore) {
-        context = store.context
+        self.store = store
     }
 
     public func add(_ photos: [NewPhoto], to tripID: Trip.ID) throws {
