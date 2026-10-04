@@ -41,6 +41,9 @@ struct CustomSheetView<Content: View>: View {
     var onPage: ((Int) -> Void)?
     /// 前後の写真の内容(step: 前 -1 / 次 +1)。スワイプ中に後ろへ見せる。
     var neighbor: ((Int) -> PageSnapshot?)?
+    /// 編集・削除ボタン(ハーフ・全開で、写真の右下に出す)。onEdit が nil ならボタンを出さない。
+    var onEdit: (() -> Void)?
+    var onDelete: (() -> Void)?
     @ViewBuilder var content: Content
 
     private enum Detent {
@@ -71,6 +74,7 @@ struct CustomSheetView<Content: View>: View {
     /// 広がったときに写真の上へ確保する、×ボタンの行の高さ。
     private let closeBarHeight: CGFloat = 44
     private let compactMargin: CGFloat = 16
+    private let actionButtonHeight: CGFloat = 40
     private let expandedMargin: CGFloat = 8
 
     var body: some View {
@@ -238,6 +242,17 @@ struct CustomSheetView<Content: View>: View {
                             .padding(.top, 24 + closeBarHeight + topExtra)
                             .allowsHitTesting(detent == .full)
                     }
+                    .overlay(alignment: .top) {
+                        // 全開では、ボタンの見た目は上の層にあり、タッチはこの透明なコピーが受ける(スクロールと一緒に動く)。
+                        if detent == .full, onEdit != nil {
+                            actionButtons()
+                                .opacity(0.01)
+                                .frame(maxWidth: .infinity, alignment: .trailing)
+                                .padding(.horizontal, headerPadding)
+                                .padding(.trailing, 8)
+                                .padding(.top, actionButtonsTop(barHeight: closeBarHeight, imageHeight: ownImageHeight) + 24 + topExtra)
+                        }
+                    }
             }
             .scrollPosition($scrollPosition)
             .scrollDisabled(detent != .full)
@@ -371,6 +386,16 @@ struct CustomSheetView<Content: View>: View {
                     .padding(.leading, compactImageSize + 12)
                     .opacity(compactOpacity * reveal)
             }
+
+            // 編集・削除ボタン(写真の右下)。
+            if onEdit != nil {
+                actionButtons()
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .padding(.trailing, 8)
+                    .padding(.top, actionButtonsTop(barHeight: barHeight, imageHeight: imageHeight))
+                    .opacity(expandedOpacity)
+                    .allowsHitTesting(progress > 0.9)
+            }
         }
         .padding(.horizontal, headerPadding)
         .padding(.top, topPad)
@@ -418,6 +443,36 @@ struct CustomSheetView<Content: View>: View {
             }
         }
         .frame(height: height, alignment: .top)
+    }
+
+    /// ペン(編集)とゴミ箱(削除)を1つにまとめた、ガラスの楕円(カプセル)。
+    private func actionButtons() -> some View {
+        HStack(spacing: 0) {
+            Button { onEdit?() } label: {
+                Image(systemName: "pencil")
+                    .font(.system(size: 16, weight: .semibold))
+                    .frame(width: 48, height: actionButtonHeight)
+                    .contentShape(Rectangle())
+            }
+            .accessibilityLabel("編集")
+            Divider()
+                .frame(height: 20)
+            Button { onDelete?() } label: {
+                Image(systemName: "trash")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(.red)
+                    .frame(width: 48, height: actionButtonHeight)
+                    .contentShape(Rectangle())
+            }
+            .accessibilityLabel("削除")
+        }
+        .buttonStyle(.plain)
+        .glassEffect(.regular.interactive(), in: .capsule)
+    }
+
+    /// ボタンを置く、スクロール内容の上端からの位置(写真の右下)。
+    private func actionButtonsTop(barHeight: CGFloat, imageHeight: CGFloat) -> CGFloat {
+        barHeight + imageHeight - 8 - actionButtonHeight
     }
 
     /// 後ろに見せる前後の写真。コンパクトは帯、広がると写真+日時+中身。

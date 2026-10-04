@@ -17,6 +17,7 @@ struct TripDetailView: View {
     @State private var addFlow: AddFlow?
     @State private var confirmDelete = false
     @State private var showRecentlyDeleted = false
+    @State private var showEdit = false
     @Environment(\.modelContext) private var modelContext
 
     /// 写真の追加の流れ。ピッカーで選んだ項目と、その入力状態を一組で持つ。
@@ -72,7 +73,9 @@ struct TripDetailView: View {
                                     content: AnyView(PhotoMemoView(photo: $0))
                                 )
                             }
-                        }
+                        },
+                        onEdit: { showEdit = true },
+                        onDelete: { confirmDelete = true }
                     ) {
                         PhotoMemoView(photo: photo)
                     }
@@ -107,6 +110,9 @@ struct TripDetailView: View {
             Button("写真を削除", role: .destructive, action: deleteSelectedPhoto)
         } message: {
             Text("削除した写真は「最近削除した項目」に\(PhotoRetention.days)日間残ります。")
+        }
+        .sheet(isPresented: $showEdit) {
+            if let photo = selectedPhoto { EditPhotoView(photo: photo) }
         }
         .sheet(isPresented: $showRecentlyDeleted) {
             RecentlyDeletedView(trip: trip)
@@ -165,25 +171,19 @@ struct TripDetailView: View {
 }
 
 private extension TripDetailView {
-    /// 右上に常に出す「…」。写真を選んでいるときだけ「写真を削除」が加わる。
+    /// 右上に常に出す「…」(44pt)。
     var moreMenu: some View {
         Menu {
             Button { showRecentlyDeleted = true } label: {
                 Label("最近削除した項目", systemImage: "trash")
             }
-            if selectedPhoto != nil {
-                Button(role: .destructive) { confirmDelete = true } label: {
-                    Label("写真を削除", systemImage: "trash")
-                }
-            }
         } label: {
             Image(systemName: "ellipsis")
                 .font(.system(size: 17, weight: .semibold))
                 .frame(width: 44, height: 44)
-                .contentShape(Circle())
+                .glassEffect(.regular.interactive(), in: .circle)
         }
-        .buttonStyle(.glass)
-        .buttonBorderShape(.circle)
+        .buttonStyle(.plain)
         .padding(.horizontal, 16)
         .padding(.top, 8)
         .accessibilityLabel("メニュー")
@@ -278,20 +278,24 @@ private struct PhotoZoomView: View {
     }
 }
 
-/// 写真に添えるメモ。パネルの中身(写真の下)に出て、写真と一緒にスクロールする。
+/// 写真に添えるタイトルとメモ。パネルの中身(写真の下)に出て、写真と一緒にスクロールする。読むだけで、書き換えはペンの編集から。
 private struct PhotoMemoView: View {
-    @Bindable var photo: TripPhoto
+    let photo: TripPhoto
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 12) {
+            if !photo.title.isEmpty {
+                Text(photo.title)
+                    .font(.title3.bold())
+            }
             Text("メモ")
                 .font(.headline)
-            TextField("メモを書く", text: $photo.memo, axis: .vertical)
-                .lineLimit(5...)
+            Text(photo.memo.isEmpty ? "メモはありません" : photo.memo)
+                .foregroundStyle(photo.memo.isEmpty ? .secondary : .primary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 16)
-        // キーボードで隠れないよう下に余白を取る。写真が上へ流れきるまでスクロールもできる。
+        // 写真が上へ流れきるまでスクロールできるよう、下に余白を取る。
         .padding(.bottom, 360)
     }
 }
