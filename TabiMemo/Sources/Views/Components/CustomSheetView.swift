@@ -79,6 +79,8 @@ struct CustomSheetView<Content: View>: View {
     private let actionButtonHeight: CGFloat = 40
     /// 全開の×。中心は右上の「…」(44pt)と同じ位置にそろえる。
     private let closeButtonSize: CGFloat = 28
+    /// 全開の上の行(バーと×)を置く、パネル上端からの距離。
+    private let closeRowTop: CGFloat = 8
     private let expandedMargin: CGFloat = 8
 
     var body: some View {
@@ -430,8 +432,8 @@ struct CustomSheetView<Content: View>: View {
                 Capsule()
                     .fill(.secondary.opacity(0.6))
                     .frame(width: 36, height: 5)
-                    // 全開に向かうほど、右の×と同じ高さ(上端をそろえる)へ寄せる。
-                    .padding(.top, lerp(6, 8 + (44 - closeButtonSize) / 2, fullProgress) + topExtra)
+                    // 全開に向かうほど、右の×と同じ横一列(中心をそろえる)へ寄せる。
+                    .padding(.top, lerp(6, closeRowTop + closeButtonSize / 2 - 2.5, fullProgress) + topExtra)
                     // 全開で「下にスワイプできる」ことを知らせるときに、下へ揺らす。
                     .offset(y: barNudge)
                     .allowsHitTesting(false)
@@ -441,8 +443,7 @@ struct CustomSheetView<Content: View>: View {
                 closeButton
                     .frame(maxWidth: .infinity, alignment: .trailing)
                     .padding(.horizontal, headerPadding)
-                    .padding(.trailing, (44 - closeButtonSize) / 2)
-                    .padding(.top, 8 + (44 - closeButtonSize) / 2 + topExtra)
+                    .padding(.top, closeRowTop + topExtra)
                     // 全開のときだけ表示する(ハーフでは出さない)。
                     .opacity(fullProgress)
                     .allowsHitTesting(fullProgress > 0.9)
