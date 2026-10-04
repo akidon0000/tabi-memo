@@ -5,14 +5,13 @@
 
 ## 前提
 
-- Tuist でプロジェクトを生成する。`TabiMemo.xcodeproj` / `.xcworkspace` / `Derived/` は git 管理外。
-- 対象は iOS 27 以降（`Project.swift`）。コードの構成は [architecture.md](architecture.md)。確認は iPhone 18 Pro のシミュレーターで行っている。
+- Xcode 27 以降が必要。プロジェクトは JSON 形式の `TabiMemo.xcodeproj/project.xcproj` を git で管理する。生成の手順はない（[ADR 0012](../adr/0012-xcode-json-project.md)）。
+- 対象は iOS 27 以降（`project.xcproj` の `IPHONEOS_DEPLOYMENT_TARGET`）。コードの構成は [architecture.md](architecture.md)。確認は iPhone 18 Pro のシミュレーターで行っている。
 - bundle id: `com.akidon0000.tabimemo`
 
 ## ビルド
 
 ```bash
-tuist generate --no-open   # ファイルを増減したら必ず
 xcodebuild -scheme TabiMemo -configuration Debug \
   -destination 'id=<シミュレーターの UDID>' -skipPackagePluginValidation build
 ```
@@ -28,7 +27,19 @@ xcodebuild test -scheme TabiMemo -destination 'id=<シミュレーターの UDID
 
 `TabiMemo` スキームで、`DomainTests` / `DataLayerTests` / `TabiMemoTests` をまとめて動かす。層ごとに動かすときは、スキームを `Domain` / `DataLayer` にする。
 
-ファイルを削除・追加したあとに `tuist generate` を忘れると、`Build input files cannot be found` で失敗する。
+## ファイル・ターゲット・設定を変える
+
+| したいこと | やり方 |
+|---|---|
+| ソースやテストを足す・消す | 該当フォルダ（`Domain/Sources` など）に置く・消すだけ。各ターゲットはフォルダごと読む（同期フォルダ）ので、`project.xcproj` は書き換えない |
+| ビルド設定を変える | `project.xcproj` の `build-settings` を書き換える。`xcrun xcodeproj setting` でもよい |
+| ターゲット・依存を足す | `project.xcproj` の `targets` と、フォルダの `target-membership` を書き換える |
+| 書き換えた後 | `xcrun xcprojformatter --update TabiMemo.xcodeproj` で並び順を整える（差分を小さく保つ） |
+
+- `project.xcproj` は JSON（末尾のカンマを許す）。コメントは書けないので、設定の理由はこの handbook か ADR に書く。
+- アプリの Info.plist は `TabiMemo/Info.plist`。フレームワークとテストの Info.plist はビルド時に生成する（`GENERATE_INFOPLIST_FILE`）。
+- スキームは `TabiMemo.xcodeproj/xcshareddata/xcschemes/` に置いた共有スキーム。テスト対象の追加はここを書き換える。
+- SwiftLint のバージョンは `project.xcproj` の `packages`、解決結果は `project.xcworkspace/xcshareddata/swiftpm/Package.resolved`。
 
 ## 起動と確認
 

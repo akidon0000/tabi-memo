@@ -5,9 +5,6 @@ included:
   - TabiMemo
   - TestSupport
 
-excluded:
-  - Derived
-
 disabled_rules:
   # 座標計算で w / h / a / b などの短い名前を使う。
   - identifier_name

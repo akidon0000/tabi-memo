@@ -16,6 +16,8 @@ flowchart LR
 
 依存は矢印の向きだけです。ターゲットが分かれているので、逆向きに import するとビルドが失敗します。
 
+各ターゲットは、下の表のフォルダをまるごと読みます。新しいファイルはフォルダに置くだけで、プロジェクトファイルは書き換えません（[development.md](development.md)）。
+
 | 層 | フォルダ | 置くもの | import してよいもの |
 |---|---|---|---|
 | Domain | `Domain/Sources/` | `Entities/` 純粋な struct、`Rules/` 純粋な計算、`Repositories/`・`Services/` プロトコル、`UseCases/` | Foundation だけ |

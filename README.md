@@ -25,11 +25,9 @@
 
 ## 開発環境
 
-- [Tuist](https://tuist.dev) でプロジェクトを生成（`.xcodeproj` / `.xcworkspace` は非管理）
-- SwiftUI + SwiftData、Swift 6 strict concurrency
+- Xcode 27 以降が必要。プロジェクトは JSON 形式の `TabiMemo.xcodeproj/project.xcproj` をそのまま管理する(Tuist などの生成は使わない。[ADR 0012](docs/adr/0012-xcode-json-project.md))
+- SwiftUI + SwiftData、Swift 6 strict concurrency。構成は [docs/handbook/architecture.md](docs/handbook/architecture.md)
 
 ```bash
-tuist install   # 依存解決（初回・Tuist/Package.swift 変更時）
-tuist generate  # Xcode プロジェクト生成
-make xcode-open # 生成物を Xcode で開く
+make xcode-open # Xcode で開く
 ```

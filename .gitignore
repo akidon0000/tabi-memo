@@ -18,12 +18,8 @@ xcuserdata/
 .swiftpm/
 *.swiftpm
 
-# Tuist (generated projects/workspaces + caches)
-*.xcodeproj
-*.xcworkspace
+# Xcode project is committed (JSON format, ADR 0012). Only per-user state is ignored (xcuserdata/ above).
 .build/
-Derived/
-Tuist/.build/
 
 # Release artifacts / signing
 build/
