@@ -17,6 +17,7 @@ struct TripDetailView: View {
     @State private var addFlow: AddFlow?
     @State private var confirmDelete = false
     @State private var showRecentlyDeleted = false
+    @State private var showPhotoList = false
     @State private var showEdit = false
     /// パネルの全開への進み具合。全開では右上の「…」を消して、パネルの×に譲る。
     @State private var panelFullProgress: CGFloat = 0
@@ -117,6 +118,14 @@ struct TripDetailView: View {
         .sheet(isPresented: $showEdit) {
             if let photo = selectedPhoto { EditPhotoView(photo: photo) }
         }
+        .sheet(isPresented: $showPhotoList) {
+            PhotoListView(trip: trip) { photo in
+                selectedPhoto = photo
+                focusMap(on: photo)
+            } onDeleted: { photo in
+                if selectedPhoto?.id == photo.id { selectedPhoto = nil; panelFullProgress = 0 }
+            }
+        }
         .sheet(isPresented: $showRecentlyDeleted) {
             RecentlyDeletedView(trip: trip)
         }
@@ -178,6 +187,9 @@ private extension TripDetailView {
     /// 右上に常に出す「…」(44pt)。
     var moreMenu: some View {
         Menu {
+            Button { showPhotoList = true } label: {
+                Label("写真の一覧", systemImage: "list.bullet")
+            }
             Button { showRecentlyDeleted = true } label: {
                 Label("最近削除した項目", systemImage: "trash")
             }

@@ -39,3 +39,23 @@ extension Trip {
         try? context.save()
     }
 }
+
+extension Trip {
+    /// 地図に出ている写真を、撮影日時の順に並べたもの。
+    var sortedActivePhotos: [TripPhoto] { activePhotos.sorted { $0.takenAt < $1.takenAt } }
+
+    /// 写真は日時の順で並ぶので、並べ替えは「いまの日時を古い順に並べ直し、新しい並びの順に割り当てる」ことで表す。
+    func applyOrder(_ order: [TripPhoto]) {
+        let dates = order.map(\.takenAt).sorted()
+        for (photo, date) in zip(order, dates) { photo.takenAt = date }
+    }
+
+    /// `photo` を `target` の位置へ移す(グリッドのドラッグ用)。
+    func move(_ photo: TripPhoto, to target: TripPhoto) {
+        var order = sortedActivePhotos
+        guard let from = order.firstIndex(where: { $0.id == photo.id }),
+              let to = order.firstIndex(where: { $0.id == target.id }), from != to else { return }
+        order.insert(order.remove(at: from), at: to)
+        applyOrder(order)
+    }
+}
