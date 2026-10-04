@@ -10,12 +10,12 @@
 |---|---|
 | Bundle ID | `com.akidon0000.tabimemo`(ASC の Bundle ID 登録済み、ID `3DBK34BGQX`) |
 | Team ID | `XSC9AJPSP3` |
-| App Store Connect App ID | **未作成**(下の手順0のあとに `asc apps list` で控える) |
+| App Store Connect App ID | `6818975282`(ASC 上の名前は自動で「旅メモ - tabimemo」になった) |
 | 署名 | 手動。プロファイル `IOS_APP_STORE-20261004`(期限 2027-05-03) |
 
 ## 手順
 
-### 0. アプリレコードを作る(ユーザーが自分で行う。未実施)
+### 0. アプリレコードを作る(ユーザーが自分で行う。2026-10-04 完了)
 
 `asc web apps create` は Apple ID のパスワードと 2FA が要るので、自分のターミナルで実行する(エージェントは行えない)。
 
@@ -48,7 +48,7 @@ scripts/testflight.sh <APP_ID> --group "Internal" --notify  # 内部テスター
 
 ## 確認済み(2026-10-04)
 
-ローカルで archive と export まで成功(`build/TabiMemo.ipa`)。**アップロードは未実施**(手順0が済んでいないため)。
+`scripts/testflight.sh 6818975282` で Build 1(version 1.0)のアップロードまで成功(`processingState: VALID`)。TestFlight のグループとテスターは未作成。
 
 ## 注意
 
