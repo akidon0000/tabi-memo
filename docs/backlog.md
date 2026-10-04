@@ -1,6 +1,6 @@
 # backlog
 
-- 読み手: 自分・エージェント(PdM スキル [`/pdm`](../.claude/skills/pdm/SKILL.md) が更新する)
+- 読み手: 自分・エージェント(個人スキル `pv-from-feedback` が更新する)
 - 目的: TestFlight の FB から出た項目の、いまの状態を1枚で見る
 
 状態: 受付 → 再現待ち / ヒアリング中 → 要件確定 → 実装中 → 配信済み(Build N) → 完了
