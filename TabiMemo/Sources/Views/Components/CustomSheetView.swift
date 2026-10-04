@@ -44,6 +44,8 @@ struct CustomSheetView<Content: View>: View {
     /// 編集・削除ボタン(ハーフ・全開で、写真の右下に出す)。onEdit が nil ならボタンを出さない。
     var onEdit: (() -> Void)?
     var onDelete: (() -> Void)?
+    /// 全開への進み具合(0〜1)。呼び出し側が、全開で消したい要素(右上の「…」)の濃さに使う。
+    var onFullProgressChange: ((CGFloat) -> Void)?
     @ViewBuilder var content: Content
 
     private enum Detent {
@@ -149,6 +151,7 @@ struct CustomSheetView<Content: View>: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+            .onChange(of: fullProgress) { _, value in onFullProgressChange?(value) }
             .task(id: detent) { await runNudgeLoop() }
             .onChange(of: isPressing) { _, pressing in
                 isTouching = pressing
@@ -431,9 +434,9 @@ struct CustomSheetView<Content: View>: View {
                     .allowsHitTesting(false)
                     .frame(maxHeight: .infinity, alignment: .top)
 
-                // 右上には、地図画面の「…」メニューが常に出るので、閉じるは左上に置く。
+                // 全開では、地図画面の「…」が消えて、同じ右上の位置に×が出る。
                 closeButton
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
                     .padding(.horizontal, headerPadding)
                     .padding(.top, 8 + topExtra)
                     // 全開のときだけ表示する(ハーフでは出さない)。
@@ -526,6 +529,7 @@ struct CustomSheetView<Content: View>: View {
             }
         } label: {
             Image(systemName: "xmark")
+                .frame(width: 44, height: 44)
         }
         .buttonStyle(.glass)
         .buttonBorderShape(.circle)

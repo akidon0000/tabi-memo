@@ -18,6 +18,8 @@ struct TripDetailView: View {
     @State private var confirmDelete = false
     @State private var showRecentlyDeleted = false
     @State private var showEdit = false
+    /// パネルの全開への進み具合。全開では右上の「…」を消して、パネルの×に譲る。
+    @State private var panelFullProgress: CGFloat = 0
     @Environment(\.modelContext) private var modelContext
 
     /// 写真の追加の流れ。ピッカーで選んだ項目と、その入力状態を一組で持つ。
@@ -75,7 +77,8 @@ struct TripDetailView: View {
                             }
                         },
                         onEdit: { showEdit = true },
-                        onDelete: { confirmDelete = true }
+                        onDelete: { confirmDelete = true },
+                        onFullProgressChange: { panelFullProgress = $0 }
                     ) {
                         PhotoMemoView(photo: photo)
                     }
@@ -150,6 +153,7 @@ struct TripDetailView: View {
         photo.deletedAt = .now
         try? modelContext.save()
         selectedPhoto = next
+        if next == nil { panelFullProgress = 0 }
         if let next { focusMap(on: next) }
     }
 
@@ -186,6 +190,9 @@ private extension TripDetailView {
         .buttonStyle(.plain)
         .padding(.horizontal, 16)
         .padding(.top, 8)
+        // 全開に向かうほど薄くして消し、同じ位置にパネルの×を出す。
+        .opacity(selectedPhoto == nil ? 1 : 1 - panelFullProgress)
+        .allowsHitTesting(panelFullProgress < 0.5)
         .accessibilityLabel("メニュー")
     }
 
