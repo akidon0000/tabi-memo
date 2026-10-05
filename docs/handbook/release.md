@@ -52,6 +52,7 @@ archive → export → upload の順に行う。ビルド番号は asc が自動
 
 - 2026-10-05: Build 2(version 1.0、リファクタリングと FB-1〜FB-9)をアップロード(`--notify` なし)。`processingState: VALID`。
 - 2026-10-05: Build 3(version 1.0、道なりの線・最初のピンの選択・長押しで追加。要件 0003)を `feature/route-and-long-press` ブランチからアップロード(`--notify` なし)。`processingState: VALID`。
+- 2026-10-06: Build 4(version 1.0、青い実線・経路編集(1つ戻す・すべて戻す)・線に沿った再生と写真の拡大。要件 0003〜0005)を `feature/route-and-long-press` ブランチからアップロード(`--notify` なし)。`processingState: VALID`。Build 3 から、経路編集と再生が加わった。
 - SwiftLint のビルドツールプラグインを使うため、archive に `-skipPackagePluginValidation` を渡している(`scripts/testflight.sh`)。
 
 ## 注意
