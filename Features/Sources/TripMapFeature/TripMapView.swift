@@ -41,6 +41,8 @@ public struct TripMapView: View {
     @State var didFocusInitially = false
     /// 経路編集モードで、いま掴んでいる点・線。
     @State var routeDrag: RouteDrag?
+    /// 再生の間、地図の拡大率を保つための、再生を始めたときの表示範囲。
+    @State var playbackSpan = MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
     /// 経路編集モード中、地図の移動・拡大を止めるか(止めない案と見比べるための設定)。
     @AppStorage("routeEditLocksMap") var routeEditLocksMap = true
 
@@ -72,7 +74,7 @@ public struct TripMapView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar(.hidden, for: .navigationBar)
             .overlay { panelLayer }
-            .overlay(alignment: .topTrailing) { if !viewModel.route.isEditing { moreMenu } }
+            .overlay(alignment: .topTrailing) { if !viewModel.route.isEditing { topControls } }
             .overlay(alignment: .top) { if viewModel.route.isEditing { routeEditBar } }
             // 拡大表示は下からせり上げず、後ろからふわっと(薄い・小さい状態から)出す。
             .overlay {
@@ -83,6 +85,9 @@ public struct TripMapView: View {
                 }
             }
             .animation(.easeOut(duration: 0.3), value: zoomedPhoto?.id)
+            .onChange(of: viewModel.playback.sample) { _, sample in
+                if let sample { followPlayback(sample) }
+            }
             .onAppear {
                 // 開いた直後は最初の写真が選ばれているので、地図もそのスポットへ動かす(パネルに隠れないように)。
                 guard !didFocusInitially, let photo = viewModel.selectedPhoto else { return }

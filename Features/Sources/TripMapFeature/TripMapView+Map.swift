@@ -34,11 +34,16 @@ extension TripMapView {
 
     private func mapContent(_ trip: Trip) -> some View {
         // 経路編集モードでは、設定によって地図の移動・拡大を止める(ドラッグが地図の移動と混ざらないように)。
-        Map(position: $cameraPosition, interactionModes: viewModel.route.isEditing && routeEditLocksMap ? [] : .all) {
+        Map(position: $cameraPosition, interactionModes: mapInteractionModes) {
             // 写真を撮った順に結ぶ青い線。道に沿った経路が求まった区間は道なり、それ以外は直線。
             if viewModel.route.path(of: trip).count > 1 {
                 MapPolyline(coordinates: viewModel.route.path(of: trip).map(\.clLocationCoordinate))
                     .stroke(.blue, style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round))
+            }
+            if let sample = viewModel.playback.sample {
+                Annotation("", coordinate: sample.coordinate.clLocationCoordinate, anchor: .center) {
+                    playbackMarker(heading: sample.heading)
+                }
             }
             if viewModel.route.isEditing {
                 ForEach(waypointMarkers(trip)) { marker in
@@ -110,6 +115,43 @@ extension TripMapView {
             return
         }
         move(toFit: cluster.photos.map(\.coordinate), minimumMeters: 50)
+    }
+
+    /// 経路編集の最中(設定が止める側のとき)と、再生の最中は、地図を指で動かせない。
+    private var mapInteractionModes: MapInteractionModes {
+        (viewModel.route.isEditing && routeEditLocksMap) || viewModel.playback.isPlaying ? [] : .all
+    }
+
+    /// 再生中に線の上を動く目印。進行方向を向く。
+    private func playbackMarker(heading: Double) -> some View {
+        Image(systemName: "location.north.fill")
+            .font(.system(size: 14, weight: .bold))
+            .foregroundStyle(.white)
+            .rotationEffect(.degrees(heading))
+            .frame(width: 30, height: 30)
+            .background(Circle().fill(Color.blue))
+            .overlay(Circle().stroke(.white, lineWidth: 3))
+            .shadow(radius: 3)
+            .allowsHitTesting(false)
+    }
+
+    /// 再生を始める・止める。始めるときは、いまの拡大率のまま、目印を追いかける。
+    func togglePlayback() {
+        if viewModel.playback.isPlaying {
+            viewModel.playback.stop()
+            return
+        }
+        guard let trip = viewModel.trip else { return }
+        playbackSpan = visibleRegion?.span ?? playbackSpan
+        viewModel.playback.start(
+            path: viewModel.route.path(of: trip),
+            stops: trip.activePhotos.map(\.coordinate)
+        )
+    }
+
+    /// 目印を地図の中心に置く(アニメーションなし。毎フレーム呼ばれる)。
+    func followPlayback(_ sample: PathPlayback.Sample) {
+        cameraPosition = .region(MKCoordinateRegion(center: sample.coordinate.clLocationCoordinate, span: playbackSpan))
     }
 
     /// 地図をその写真のスポットへ動かす(パネルに隠れない位置へ)。拡大率は変えない。

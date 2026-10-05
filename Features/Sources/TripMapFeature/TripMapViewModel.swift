@@ -17,6 +17,8 @@ public final class TripMapViewModel {
     var selectedPhotoID: Photo.ID?
     /// 写真を撮影順に結ぶ線(道なりの経路と、経路編集モード)。
     let route: RouteViewModel
+    /// 線に沿った再生。
+    let playback = PlaybackViewModel()
 
     private var hasPurged = false
     private var hasSelectedInitially = false
