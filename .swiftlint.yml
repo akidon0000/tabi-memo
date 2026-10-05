@@ -1,0 +1,39 @@
+# 数値のルールは docs/handbook/architecture.md の「数値の上限」と同じ値にする。変えるときは両方を直す。
+disabled_rules:
+  # 座標計算で w / h / a / b などの短い名前を使う。
+  - identifier_name
+  # TODO コメントは残してよい(やることの正本は docs/backlog.md)。
+  - todo
+  # 配列・辞書の末尾カンマは、行の追加で差分が汚れないよう許す。
+  - trailing_comma
+  # SwiftUI の Button(action:) { label } の書き方と衝突する。
+  - multiple_closures_with_trailing_closure
+
+file_length:
+  warning: 200
+  error: 300
+  ignore_comment_only_lines: true
+
+type_body_length:
+  warning: 150
+  error: 250
+
+function_body_length:
+  warning: 40
+  error: 60
+
+line_length:
+  warning: 180
+  error: 240
+  ignores_comments: true
+
+cyclomatic_complexity:
+  warning: 10
+  error: 20
+
+large_tuple:
+  warning: 3
+  error: 4
+
+nesting:
+  type_level: 2
