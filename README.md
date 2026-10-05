@@ -25,7 +25,7 @@
 
 ## 開発環境
 
-- Xcode 27 以降が必要。プロジェクトは JSON 形式の `TabiMemo.xcodeproj/project.xcproj` をそのまま管理する(Tuist などの生成は使わない。[ADR 0012](docs/adr/0012-xcode-json-project.md))
+- Xcode 27 以降が必要。アプリのプロジェクトは JSON 形式の `TabiMemo.xcodeproj/project.xcproj`(殻だけ)。コードは Swift Package の `Domain/` `DataLayer/` `Features/` に分けている([ADR 0012](docs/adr/0012-xcode-json-project.md)、[ADR 0013](docs/adr/0013-swift-packages.md))
 - SwiftUI + SwiftData、Swift 6 strict concurrency。構成は [docs/handbook/architecture.md](docs/handbook/architecture.md)
 
 ```bash

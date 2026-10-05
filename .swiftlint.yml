@@ -1,10 +1,4 @@
 # 数値のルールは docs/handbook/architecture.md の「数値の上限」と同じ値にする。変えるときは両方を直す。
-included:
-  - Domain
-  - DataLayer
-  - TabiMemo
-  - TestSupport
-
 disabled_rules:
   # 座標計算で w / h / a / b などの短い名前を使う。
   - identifier_name

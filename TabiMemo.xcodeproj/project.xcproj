@@ -12,6 +12,15 @@
   },
   "packages": [
     {
+      "kind": "local",
+      "path": "Domain",
+    }, {
+      "kind": "local",
+      "path": "DataLayer",
+    }, {
+      "kind": "local",
+      "path": "Features",
+    }, {
       "kind": "remote",
       "repository": "https://github.com/SimplyDanny/SwiftLintPlugins",
       "version": {
@@ -24,150 +33,63 @@
       "kind": "group",
       "name": "Products",
       "children": [
-        {
-          "path": "<PRODUCTS>/DataLayer.framework",
-          "id": "20A7C3CB2E8632D66E7E1350",
-          "type": "wrapper.framework",
-          "index": false,
-          "target-membership": [
-            "DataLayerTests/frameworks",
-            "TabiMemo/frameworks",
-            { "build-phase": "TabiMemo/copy/Embed Frameworks", "code-sign-on-copy": true, "header-preservation": "remove-on-copy" },
-          ],
-        },
-        { "path": "<PRODUCTS>/DataLayerTests.xctest", "id": "4FFBA9EE14DEED2D34E02DEB", "type": "wrapper.cfbundle", "index": false },
-        {
-          "path": "<PRODUCTS>/Domain.framework",
-          "id": "AE4474E170A459A1C889A0A2",
-          "type": "wrapper.framework",
-          "index": false,
-          "target-membership": [
-            "DataLayer/frameworks",
-            "DomainTests/frameworks",
-            "TabiMemo/frameworks",
-            "TabiMemoTests/frameworks",
-            { "build-phase": "TabiMemo/copy/Embed Frameworks", "code-sign-on-copy": true, "header-preservation": "remove-on-copy" },
-          ],
-        },
-        { "path": "<PRODUCTS>/DomainTests.xctest", "id": "AB611E3920AA0E12D88B16FA", "type": "wrapper.cfbundle", "index": false },
         { "path": "<PRODUCTS>/TabiMemo.app", "id": "8962741C8A4DF8A827949B3A", "type": "wrapper.application", "index": false },
-        { "path": "<PRODUCTS>/TabiMemoTests.xctest", "id": "A43551574C84FE241CC3DCDE", "type": "wrapper.cfbundle", "index": false },
       ],
     },
-    { "kind": "folder", "path": "Domain/Sources", "target-membership": [ "Domain" ] },
-    { "kind": "folder", "path": "Domain/Tests", "target-membership": [ "DomainTests" ] },
-    { "kind": "folder", "path": "DataLayer/Sources", "target-membership": [ "DataLayer" ] },
-    { "kind": "folder", "path": "DataLayer/Tests", "target-membership": [ "DataLayerTests" ] },
     { "kind": "folder", "path": "TabiMemo/Sources", "target-membership": [ "TabiMemo" ] },
-    { "kind": "folder", "path": "TabiMemo/Resources", "target-membership": [ "TabiMemo" ] },
-    { "kind": "folder", "path": "TabiMemo/Tests", "target-membership": [ "TabiMemoTests" ] },
-    { "kind": "folder", "path": "TestSupport", "target-membership": [ "DomainTests", "TabiMemoTests" ] },
     { "path": "TabiMemo/Info.plist" },
     { "path": ".swiftlint.yml" },
   ],
   "targets": [
     {
-      "name": "Domain",
-      "id": "18EC8E561ACB966E31978A3B",
-      "product": "Products/Domain.framework",
-      "product-type": "framework",
-      "dependencies": [
-        { "kind": "package", "product-name": "SwiftLintBuildToolPlugin", "product-type": "build-tool-plugin" },
-      ],
-      "build-phases": [
-        "compile-sources",
-        "resources",
-        "frameworks",
-      ],
-      "build-settings": {
-        "DEFINES_MODULE": "YES",
-        "DYLIB_COMPATIBILITY_VERSION": "1",
-        "DYLIB_CURRENT_VERSION": "1",
-        "DYLIB_INSTALL_NAME_BASE": "@rpath",
-        "GENERATE_INFOPLIST_FILE": "YES",
-        "INSTALL_PATH": "$(LOCAL_LIBRARY_DIR)/Frameworks",
-        "PRODUCT_BUNDLE_IDENTIFIER": "com.akidon0000.tabimemo.domain",
-        "SKIP_INSTALL": "YES",
-        "SWIFT_DEFAULT_ACTOR_ISOLATION": "nonisolated",
-        "VERSIONING_SYSTEM": "apple-generic",
-      },
-    }, {
-      "name": "DomainTests",
-      "id": "9026625664276F091DE7BACE",
-      "product": "Products/DomainTests.xctest",
-      "product-type": "bundle.unit-test",
-      "dependencies": [
-        "Domain",
-      ],
-      "build-phases": [
-        "compile-sources",
-        "resources",
-        "frameworks",
-      ],
-      "build-settings": {
-        "GENERATE_INFOPLIST_FILE": "YES",
-        "PRODUCT_BUNDLE_IDENTIFIER": "com.akidon0000.tabimemo.domain-tests",
-      },
-    }, {
-      "name": "DataLayer",
-      "id": "4C766CE1247F0EF46583066B",
-      "product": "Products/DataLayer.framework",
-      "product-type": "framework",
-      "dependencies": [
-        { "kind": "package", "product-name": "SwiftLintBuildToolPlugin", "product-type": "build-tool-plugin" },
-        "Domain",
-      ],
-      "build-phases": [
-        "compile-sources",
-        "resources",
-        "frameworks",
-      ],
-      "build-settings": {
-        "DEFINES_MODULE": "YES",
-        "DYLIB_COMPATIBILITY_VERSION": "1",
-        "DYLIB_CURRENT_VERSION": "1",
-        "DYLIB_INSTALL_NAME_BASE": "@rpath",
-        "GENERATE_INFOPLIST_FILE": "YES",
-        "INSTALL_PATH": "$(LOCAL_LIBRARY_DIR)/Frameworks",
-        "PRODUCT_BUNDLE_IDENTIFIER": "com.akidon0000.tabimemo.datalayer",
-        "SKIP_INSTALL": "YES",
-        "VERSIONING_SYSTEM": "apple-generic",
-      },
-    }, {
-      "name": "DataLayerTests",
-      "id": "BD206C792E714F6542BB99A4",
-      "product": "Products/DataLayerTests.xctest",
-      "product-type": "bundle.unit-test",
-      "dependencies": [
-        "DataLayer",
-      ],
-      "build-phases": [
-        "compile-sources",
-        "resources",
-        "frameworks",
-      ],
-      "build-settings": {
-        "GENERATE_INFOPLIST_FILE": "YES",
-        "PRODUCT_BUNDLE_IDENTIFIER": "com.akidon0000.tabimemo.datalayer-tests",
-      },
-    }, {
       "name": "TabiMemo",
       "id": "2C5E99AB7B39C2206E8A3DE4",
       "product": "Products/TabiMemo.app",
       "product-type": "application",
       "dependencies": [
         { "kind": "package", "product-name": "SwiftLintBuildToolPlugin", "product-type": "build-tool-plugin" },
-        "DataLayer",
-        "Domain",
+        { "kind": "package", "package": "Domain", "product-name": "Domain" },
+        { "kind": "package", "package": "DataLayer", "product-name": "DataLayer" },
+        { "kind": "package", "package": "Features", "product-name": "TripMapFeature" },
+        { "kind": "package", "package": "Features", "product-name": "PhotoListFeature" },
+        { "kind": "package", "package": "Features", "product-name": "AddPhotosFeature" },
+        { "kind": "package", "package": "Features", "product-name": "EditPhotoFeature" },
+        { "kind": "package", "package": "Features", "product-name": "RecentlyDeletedFeature" },
       ],
       "build-phases": [
         "compile-sources",
         "resources",
         "frameworks",
+      ],
+      "package-product-members": [
         {
-          "kind": "copy",
-          "name": "Embed Frameworks",
-          "bundle-base-path": "frameworks-directory",
+          "package": "DataLayer",
+          "product-name": "DataLayer",
+          "build-phase": { "build-phase": "frameworks" },
+        }, {
+          "package": "Domain",
+          "product-name": "Domain",
+          "build-phase": { "build-phase": "frameworks" },
+        }, {
+          "package": "Features",
+          "product-name": "AddPhotosFeature",
+          "build-phase": { "build-phase": "frameworks" },
+        }, {
+          "package": "Features",
+          "product-name": "EditPhotoFeature",
+          "build-phase": { "build-phase": "frameworks" },
+        }, {
+          "package": "Features",
+          "product-name": "PhotoListFeature",
+          "build-phase": { "build-phase": "frameworks" },
+        }, {
+          "package": "Features",
+          "product-name": "RecentlyDeletedFeature",
+          "build-phase": { "build-phase": "frameworks" },
+        }, {
+          "package": "Features",
+          "product-name": "TripMapFeature",
+          "build-phase": { "build-phase": "frameworks" },
         },
       ],
       "build-settings": {
@@ -180,28 +102,6 @@
           "@executable_path/Frameworks",
         ],
         "PRODUCT_BUNDLE_IDENTIFIER": "com.akidon0000.tabimemo",
-      },
-    }, {
-      "name": "TabiMemoTests",
-      "id": "4A44E597E976140AF988BDB5",
-      "product": "Products/TabiMemoTests.xctest",
-      "product-type": "bundle.unit-test",
-      "test-host-target": "TabiMemo",
-      "dependencies": [
-        "Domain",
-        "TabiMemo",
-      ],
-      "build-phases": [
-        "compile-sources",
-        "resources",
-        "frameworks",
-      ],
-      "build-settings": {
-        "BUNDLE_LOADER": "$(TEST_HOST)",
-        "GENERATE_INFOPLIST_FILE": "YES",
-        "PRODUCT_BUNDLE_IDENTIFIER": "com.akidon0000.tabimemo.tests",
-        "TEST_HOST": "$(BUILT_PRODUCTS_DIR)/TabiMemo.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/TabiMemo",
-        "TEST_TARGET_NAME": "TabiMemo",
       },
     },
   ],

@@ -1,0 +1,2 @@
+# 共通の設定はリポジトリ直下の .swiftlint.yml。ここに足すのはパッケージ固有の設定だけ。
+parent_config: ../.swiftlint.yml
