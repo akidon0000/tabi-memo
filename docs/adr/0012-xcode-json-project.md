@@ -9,7 +9,7 @@
 - プロジェクトは `TabiMemo.xcodeproj/project.xcproj`(Xcode 27.2 で入った JSON 形式)を git で管理する。Tuist(`Project.swift`)と生成の手順はなくす。XcodeGen も使わない。
 - 各ターゲットのソースは、フォルダごとに割り当てる(同期フォルダ。`"kind": "folder"`)。ファイルの追加・削除でプロジェクトファイルは変わらない。
 - アプリの Info.plist は `TabiMemo/Info.plist` に置く。フレームワークとテストの Info.plist はビルド時に生成する。
-- 共有スキーム(`TabiMemo` / `Domain` / `DataLayer`)も `TabiMemo.xcodeproj` の中に置いて管理する。SwiftLint のバージョンは `project.xcproj` で1つに固定し、`Package.resolved` は管理しない(置いても数秒で消えた。原因は未特定)。
+- 共有スキームも `TabiMemo.xcodeproj` の中に置いて管理する(当初は `TabiMemo` / `Domain` / `DataLayer`。ADR 0013 以降は `TabiMemo` だけ)。SwiftLint のバージョンは `project.xcproj` で1つに固定し、`Package.resolved` は管理しない(置いても数秒で消えた。原因は未特定)。
 - 書き換えた後は `xcrun xcprojformatter --update TabiMemo.xcodeproj` で整える。
 
 ## 背景

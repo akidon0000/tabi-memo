@@ -35,7 +35,7 @@ CustomSheetView(
 
 ## 構成の要点
 
-[Shared/Components/CustomSheet/](https://github.com/akidon0000/tabi-memo/blob/c14f2dbf583e102cdced6be74d7f01dc6e25eb70/TabiMemo/Sources/Shared/Components/CustomSheet)。ファイルは役割ごとに分けている。
+[TripMapFeature/Components/CustomSheet/](https://github.com/akidon0000/tabi-memo/blob/5968d9876c08f7a80e10770d6731385d44480256/Features/Sources/TripMapFeature/Components/CustomSheet)。ファイルは役割ごとに分けている。
 
 | ファイル | 中身 |
 |---|---|

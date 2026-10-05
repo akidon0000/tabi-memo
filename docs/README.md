@@ -9,4 +9,4 @@
 | handbook | [handbook/](handbook/README.md) | 現在の手順。ビルド・シミュレーター確認・パネルの使い方 |
 | 仕様書 | [specs/](specs/map-screen.md) | 画面ごとの挙動とスクリーンショット |
 
-README.md（アプリの概要）・ROADMAP.md（将来の予定）はリポジトリ直下。
+初めて読むなら、リポジトリ直下の [README.md](../README.md)(全体像・構成図・用語)から。ROADMAP.md(将来の予定)も直下にある。

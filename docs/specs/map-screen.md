@@ -2,7 +2,7 @@
 
 - 読み手: 実装者・確認者（本人・エージェント）
 - 目的: 地図画面とその下部パネルの挙動を、スクリーンショットつきで定義する
-- 対象: [Features/TripMap/](https://github.com/akidon0000/tabi-memo/blob/c14f2dbf583e102cdced6be74d7f01dc6e25eb70/TabiMemo/Sources/Features/TripMap) / [Shared/Components/CustomSheet/](https://github.com/akidon0000/tabi-memo/blob/c14f2dbf583e102cdced6be74d7f01dc6e25eb70/TabiMemo/Sources/Shared/Components/CustomSheet)
+- 対象: [TripMapFeature/](https://github.com/akidon0000/tabi-memo/blob/5968d9876c08f7a80e10770d6731385d44480256/Features/Sources/TripMapFeature) / [Components/CustomSheet/](https://github.com/akidon0000/tabi-memo/blob/5968d9876c08f7a80e10770d6731385d44480256/Features/Sources/TripMapFeature/Components/CustomSheet)(`Features` パッケージ)
 - 撮影: iPhone 18 Pro（iOS 26）シミュレーター、デモデータ（渋谷→代々木公園、写真3枚）。撮影日 2026-10-03
 - 設計の理由: [ADR](../adr/README.md)
 
