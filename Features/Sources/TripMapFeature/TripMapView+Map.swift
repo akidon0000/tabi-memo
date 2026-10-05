@@ -145,8 +145,14 @@ extension TripMapView {
         playbackSpan = visibleRegion?.span ?? playbackSpan
         viewModel.playback.start(
             path: viewModel.route.path(of: trip),
-            stops: trip.activePhotos.map(\.coordinate)
+            photos: trip.activePhotos
         )
+    }
+
+    /// 再生で止まっている写真。
+    func featuredPlaybackPhoto(in trip: Trip) -> Photo? {
+        guard let id = viewModel.playback.featuredPhotoID else { return nil }
+        return trip.activePhotos.first { $0.id == id }
     }
 
     /// 目印を地図の中心に置く(アニメーションなし。毎フレーム呼ばれる)。

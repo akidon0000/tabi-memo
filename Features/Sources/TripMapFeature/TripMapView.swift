@@ -74,6 +74,14 @@ public struct TripMapView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar(.hidden, for: .navigationBar)
             .overlay { panelLayer }
+            // 再生中、写真の場所に着いたら、その写真を拡大して見せる。停止ボタンは、この上に出す。
+            .overlay {
+                if let photo = featuredPlaybackPhoto(in: trip) {
+                    PlaybackPhotoView(image: photo.image)
+                        .transition(.opacity.combined(with: .scale(scale: 0.6)))
+                }
+            }
+            .animation(.spring(duration: 0.45), value: viewModel.playback.featuredPhotoID)
             .overlay(alignment: .topTrailing) { if !viewModel.route.isEditing { topControls } }
             .overlay(alignment: .top) { if viewModel.route.isEditing { routeEditBar } }
             // 拡大表示は下からせり上げず、後ろからふわっと(薄い・小さい状態から)出す。
