@@ -22,7 +22,7 @@ xcodebuild -scheme TabiMemo -configuration Debug \
 ## テスト
 
 ```bash
-scripts/test.sh            # Domain / DataLayer / Features をまとめて動かす(iPhone 18 Pro)
+scripts/test.sh            # Domain / DataLayer / Features をまとめて動かす(iPhone 18 Pro)。失敗があると終了コード 1
 scripts/test.sh <UDID>     # シミュレーターを指定する
 ```
 
@@ -40,7 +40,7 @@ cd Features && xcodebuild test -scheme Features-Package \
 | したいこと | やり方 |
 |---|---|
 | ソースやテストを足す・消す | 該当モジュールのフォルダ(`Features/Sources/TripMapFeature/` など)に置く・消すだけ。`Package.swift` は書き換えない |
-| 画面や層のモジュールを足す | 該当パッケージの `Package.swift` に、ターゲット(と `products`)を足す。写す元は同じ種類の既存のターゲット。使い方は [architecture.md](architecture.md) の「画面を1つ足す」 |
+| 画面や層のモジュールを足す | 該当パッケージの `Package.swift` に、ターゲット(と `products`)を足す。画面は `feature("XxxFeature")` の1行。層は、同じ種類の既存のターゲットを写す。使い方は [architecture.md](architecture.md) の「画面を1つ足す」 |
 | アプリのビルド設定を変える | `project.xcproj` の `build-settings` を書き換える。`xcrun xcodeproj setting` でもよい。書き換えた後は `xcrun xcprojformatter --update TabiMemo.xcodeproj` |
 | パッケージの設定を変える | `Package.swift` の `swiftSettings` など。既定のアクターは `.defaultIsolation(MainActor.self)`(Domain は付けない) |
 | アプリがパッケージのプロダクトを使う | `project.xcproj` の `packages` と、ターゲットの `dependencies`・`package-product-members` に足す(既存の行を写す) |

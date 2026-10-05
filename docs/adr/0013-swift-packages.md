@@ -42,6 +42,7 @@
 - 別のモジュールから使う型・イニシャライザ・メソッドには、`public` が要る。ADR 0009 は「AI が読みやすい」ことを優先して機能ごとの分割を見送ったが、これを承知で分ける(分割を指示されたため)。`public` を付け忘れると、ビルドが教えてくれる。
 - 画面どうしの作り方は、`TripMapChildren`(子画面の ViewModel を作る関数の束)で渡す。`AppDependencies` を `@Environment` に置く方式はやめた。画面が、組み立てを担う型を知らなくて済む。
 - 地図でしか使わない部品(下のパネル・写真の拡大・ピン・距離の計算)は `TripMapFeature` に置く。複数の画面で使うものだけを `SharedUI` に置く(`LocationPinPicker`、座標と画像の変換)。
+- `Features/Package.swift` では、画面のターゲットを `feature("XxxFeature", dependsOn: [...])` の1行で書く。Domain・SharedUI への依存、既定のアクター、SwiftLint は関数の中にまとめ、画面ごとに違うのは依存する画面だけにする(画面を足すとき、写し間違える箇所を減らすため)。
 - SwiftLint のプラグインは各パッケージの `Package.swift` に書く(0.65.1 に固定)。設定は、直下の `.swiftlint.yml` を各パッケージの `.swiftlint.yml` の `parent_config` で引き継ぐ。
 - 既定のアクターの設定(`SWIFT_DEFAULT_ACTOR_ISOLATION`)は、パッケージでは `swiftSettings: [.defaultIsolation(MainActor.self)]` で書く。Domain は何も書かない(nonisolated)。
 - テストは各パッケージの `Tests/` に置き、`scripts/test.sh` でまとめて動かす。アプリのスキームではテストを動かさない(テストはパッケージのスキーム `Domain-Package` などで動く)。

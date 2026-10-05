@@ -2,7 +2,6 @@ import AddPhotosFeature
 import DataLayer
 import Domain
 import EditPhotoFeature
-import Observation
 import PhotoListFeature
 import RecentlyDeletedFeature
 import TripMapFeature
@@ -10,12 +9,11 @@ import TripMapFeature
 /// 依存の組み立て(Composition Root)。Repository と Service をここで作り、UseCase を通して各画面の ViewModel に渡す。
 /// 地図画面が開く子画面の作り方は `tripMapChildren` にまとめて渡す(各画面は他の画面や、この型を知らない)。
 @MainActor
-@Observable
 final class AppDependencies {
-    @ObservationIgnored private let tripRepository: any TripRepository
-    @ObservationIgnored private let photoRepository: any PhotoRepository
-    @ObservationIgnored private let metadataReader: any PhotoMetadataReading
-    @ObservationIgnored private let suggester: any PhotoSuggesting
+    private let tripRepository: any TripRepository
+    private let photoRepository: any PhotoRepository
+    private let metadataReader: any PhotoMetadataReading
+    private let suggester: any PhotoSuggesting
 
     init(
         tripRepository: any TripRepository,
@@ -41,11 +39,12 @@ final class AppDependencies {
         )
     }
 
-    // MARK: - ViewModel
-
+    /// アプリの最初の画面。子画面の ViewModel もここから作られる。
     func makeTripMapView() -> TripMapView {
         TripMapView(viewModel: makeTripMapViewModel(), children: tripMapChildren)
     }
+
+    // MARK: - ViewModel
 
     private var tripMapChildren: TripMapChildren {
         TripMapChildren(
@@ -56,7 +55,7 @@ final class AppDependencies {
         )
     }
 
-    func makeTripMapViewModel() -> TripMapViewModel {
+    private func makeTripMapViewModel() -> TripMapViewModel {
         TripMapViewModel(
             observeCurrentTrip: ObserveCurrentTripUseCase(tripRepository: tripRepository),
             purgeExpiredPhotos: PurgeExpiredPhotosUseCase(photoRepository: photoRepository),
@@ -64,7 +63,7 @@ final class AppDependencies {
         )
     }
 
-    func makeAddPhotosViewModel(count: Int, trip: Trip, fallbackCenter: Coordinate) -> AddPhotosViewModel {
+    private func makeAddPhotosViewModel(count: Int, trip: Trip, fallbackCenter: Coordinate) -> AddPhotosViewModel {
         AddPhotosViewModel(
             count: count,
             trip: trip,
@@ -75,11 +74,11 @@ final class AppDependencies {
         )
     }
 
-    func makeEditPhotoViewModel(photo: Photo) -> EditPhotoViewModel {
+    private func makeEditPhotoViewModel(photo: Photo) -> EditPhotoViewModel {
         EditPhotoViewModel(photo: photo, updatePhoto: UpdatePhotoUseCase(photoRepository: photoRepository))
     }
 
-    func makePhotoListViewModel(tripID: Trip.ID) -> PhotoListViewModel {
+    private func makePhotoListViewModel(tripID: Trip.ID) -> PhotoListViewModel {
         PhotoListViewModel(
             tripID: tripID,
             observeTrip: ObserveTripUseCase(tripRepository: tripRepository),
@@ -88,7 +87,7 @@ final class AppDependencies {
         )
     }
 
-    func makeRecentlyDeletedViewModel(tripID: Trip.ID) -> RecentlyDeletedViewModel {
+    private func makeRecentlyDeletedViewModel(tripID: Trip.ID) -> RecentlyDeletedViewModel {
         RecentlyDeletedViewModel(
             tripID: tripID,
             observeTrip: ObserveTripUseCase(tripRepository: tripRepository),

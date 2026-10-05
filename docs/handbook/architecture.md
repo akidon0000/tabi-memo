@@ -75,7 +75,7 @@ sequenceDiagram
 - ViewModel は `@MainActor` の `@Observable final class` にします。UseCase をイニシャライザで受け取り、他の ViewModel や View を知らないようにします。
 - View は、ViewModel の状態を描くことと、操作を ViewModel に渡すことだけをします。地図のカメラ位置のような、見た目だけの状態は View の `@State` に置きます。
 - ViewModel は Domain の Entity と Rule を直接使ってかまいません(純粋な計算なので)。保存・読み込み・外部とのやり取りは、必ず UseCase を通します。
-- 組み立ては `TabiMemo/Sources/AppDependencies.swift` の1か所だけで行います。画面は `AppDependencies` を知りません。子画面を開く画面は、子画面の ViewModel を作る関数を、イニシャライザで受け取ります(`TripMapChildren` が実例)。
+- 組み立ては `TabiMemo/Sources/AppDependencies.swift` の1か所だけで行います。外から呼ぶのは `live()` と `makeTripMapView()` だけで、他の `make〜` は `private` です。画面は `AppDependencies` を知りません。子画面を開く画面は、子画面の ViewModel を作る関数を、イニシャライザで受け取ります(`TripMapChildren` が実例)。
 - コメントには「なぜ」を書きます。コードを読めば分かる「何を」は書きません。
 
 ### 数値の上限(SwiftLint で検査)
@@ -133,7 +133,7 @@ public struct UpdatePhotoMemoUseCase {
 
 小さな実例は `Features/Sources/RecentlyDeletedFeature/` です(一覧の表示、元に戻す、完全に削除)。
 
-1. `Features/Package.swift` に、`XxxFeature` のターゲット(と `products` の `.library`)を足します。既存の画面(例: `EditPhotoFeature`)の記述をそのまま写し、名前だけ変えます。
+1. `Features/Package.swift` の `products` に `.library(name: "XxxFeature", targets: ["XxxFeature"])`、`targets` に `feature("XxxFeature")` を足します。他の画面を開くなら `feature("XxxFeature", dependsOn: ["EditPhotoFeature"])` のように書きます。
 2. `Features/Sources/XxxFeature/XxxViewModel.swift` を作ります。
 
 ```swift
@@ -204,5 +204,5 @@ public struct XxxView: View {
 
 - テストは Swift Testing(`@Test`、`#expect`)で書きます。
 - 偽物は `Domain/Sources/TestSupport/` に手書きします(`public`)。`DomainTests` と `FeaturesTests` が使います。
-- まとめて動かすのは `scripts/test.sh`。パッケージごとに動かすときは、そのフォルダで `xcodebuild test -scheme <スキーム名>` です([development.md](development.md))。
+- まとめて動かすのは `scripts/test.sh`(1つでも失敗すると終了コードが 1 になります)。パッケージごとに動かすときは、そのフォルダで `xcodebuild test -scheme <スキーム名>` です([development.md](development.md))。
 - 画面の見た目は、シミュレーターで確認します。手順は [development.md](development.md) にあります。

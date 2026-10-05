@@ -2,11 +2,11 @@ import SwiftUI
 
 @main
 struct TabiMemoApp: App {
-    @State private var dependencies: AppDependencies
+    private let dependencies: AppDependencies
 
     init() {
         do {
-            _dependencies = State(initialValue: try AppDependencies.live())
+            dependencies = try AppDependencies.live()
         } catch {
             fatalError("保存先を開けませんでした: \(error)")
         }
