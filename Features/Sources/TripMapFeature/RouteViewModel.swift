@@ -6,9 +6,19 @@ import Observation
 @Observable
 public final class RouteViewModel {
     /// 経路編集モード中か。
-    var isEditing = false
+    private(set) var isEditing = false
+    /// 編集モードに入ってからの、直す前の経由点(新しい順に積む)。「1つ戻す」「すべて戻す」に使う。
+    private var history: [Step] = []
     /// 区間ごとの道なりの経路。まだ求めていない区間は、線が直線になる。
     private(set) var legPaths: [RouteSegment: [Coordinate]] = [:]
+
+    /// 1回の編集。どの組の経由点を、どう直す前の状態に戻すか。
+    private struct Step {
+        let fromPhotoID: Photo.ID
+        let toPhotoID: Photo.ID
+        let tripID: Trip.ID
+        let before: [Coordinate]
+    }
 
     private var routeTask: Task<Void, Never>?
     private let findRoute: FindRouteUseCase
@@ -17,6 +27,18 @@ public final class RouteViewModel {
     public init(findRoute: FindRouteUseCase, setWaypoints: SetRouteWaypointsUseCase) {
         self.findRoute = findRoute
         self.setWaypoints = setWaypoints
+    }
+
+    var canUndo: Bool { !history.isEmpty }
+
+    func beginEditing() {
+        history = []
+        isEditing = true
+    }
+
+    func finishEditing() {
+        history = []
+        isEditing = false
     }
 
     /// 地図に引く、写真を結ぶ線の座標。
@@ -64,7 +86,31 @@ public final class RouteViewModel {
         save(waypoints, for: pair, in: trip)
     }
 
+    /// 直す前に戻す。最後の1回だけ(編集モードに入る前より前には戻らない)。
+    func undo() {
+        guard let step = history.popLast() else { return }
+        restore(step)
+    }
+
+    /// 編集モードに入ったときの状態まで、すべて戻す。
+    func undoAll() {
+        // 同じ組を何度直していても、いちばん古い「直す前」だけを書き戻す(`history` は古い順。重なったら先のものを残す)。
+        let oldestFirst = Dictionary(history.map { (Pair(from: $0.fromPhotoID, to: $0.toPhotoID), $0) }, uniquingKeysWith: { first, _ in first })
+        history = []
+        for step in oldestFirst.values { restore(step) }
+    }
+
+    private struct Pair: Hashable {
+        let from: Photo.ID
+        let to: Photo.ID
+    }
+
+    private func restore(_ step: Step) {
+        try? setWaypoints.execute(waypoints: step.before, from: step.fromPhotoID, to: step.toPhotoID, in: step.tripID)
+    }
+
     private func save(_ waypoints: [Coordinate], for pair: PhotoPath.Pair, in trip: Trip) {
+        history.append(Step(fromPhotoID: pair.fromPhotoID, toPhotoID: pair.toPhotoID, tripID: trip.id, before: pair.waypoints))
         try? setWaypoints.execute(waypoints: waypoints, from: pair.fromPhotoID, to: pair.toPhotoID, in: trip.id)
     }
 }

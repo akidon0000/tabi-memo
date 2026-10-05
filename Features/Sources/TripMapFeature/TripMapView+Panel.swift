@@ -72,7 +72,7 @@ extension TripMapView {
                 Label("最近取り除いた項目", systemImage: "trash")
             }
             Divider()
-            Button { viewModel.route.isEditing = true } label: {
+            Button { viewModel.route.beginEditing() } label: {
                 Label("経路を編集", systemImage: "point.topleft.down.to.point.bottomright.curvepath")
             }
             Toggle("経路の編集中は地図を動かさない", isOn: $routeEditLocksMap)

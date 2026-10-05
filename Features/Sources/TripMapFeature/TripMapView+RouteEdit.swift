@@ -37,7 +37,8 @@ extension TripMapView {
             .onChanged { value in
                 guard case .second(true, let drag?) = value else { return }
                 if routeDrag == nil {
-                    beginRouteDrag(at: drag.location, proxy: proxy, trip: trip)
+                    // 最初のイベントは、動き出したあとの位置で届くことがある。押した位置を先に、次に届いた位置で、何を掴んだか判定する。
+                    beginRouteDrag(grabbedAt: [drag.startLocation, drag.location], at: drag.location, proxy: proxy, trip: trip)
                 } else {
                     routeDrag?.location = drag.location
                 }
@@ -68,20 +69,32 @@ extension TripMapView {
         Circle()
             .fill(.white)
             .frame(width: 20, height: 20)
-            .overlay(Circle().stroke(Color.accentColor, lineWidth: 4))
+            .overlay(Circle().stroke(Color.blue, lineWidth: 4))
             .shadow(radius: 2)
     }
 
     /// 上部の「経路を編集中」の帯と「完了」。
     var routeEditBar: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("経路を編集中").font(.headline)
-                Text("線を長押ししてドラッグ。点はタップで消す").font(.caption)
+        VStack(spacing: 10) {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("経路を編集中").font(.headline)
+                    Text("線を長押ししてドラッグ。点はタップで消す").font(.caption)
+                }
+                Spacer()
+                Button("完了") { viewModel.route.finishEditing() }
+                    .buttonStyle(.borderedProminent)
             }
-            Spacer()
-            Button("完了") { viewModel.route.isEditing = false }
-                .buttonStyle(.borderedProminent)
+            HStack(spacing: 12) {
+                Button { viewModel.route.undo() } label: {
+                    Label("1つ戻す", systemImage: "arrow.uturn.backward").frame(maxWidth: .infinity)
+                }
+                Button { viewModel.route.undoAll() } label: {
+                    Label("すべて戻す", systemImage: "arrow.counterclockwise").frame(maxWidth: .infinity)
+                }
+            }
+            .buttonStyle(.bordered)
+            .disabled(!viewModel.route.canUndo)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
@@ -90,14 +103,15 @@ extension TripMapView {
         .padding(.top, 8)
     }
 
-    private func beginRouteDrag(at location: CGPoint, proxy: MapProxy, trip: Trip) {
+    private func beginRouteDrag(grabbedAt grabPoints: [CGPoint], at location: CGPoint, proxy: MapProxy, trip: Trip) {
         let pairs = viewModel.route.pairs(of: trip)
         let legs = pairs.enumerated().flatMap { pairIndex, pair in
             pair.legPaths(using: viewModel.route.legPaths).enumerated().map { legIndex, path in
                 RouteHitTest.Leg(pair: pairIndex, leg: legIndex, points: path.compactMap { screenPoint($0, proxy) })
             }
         }
-        guard let target = RouteHitTest.target(at: location, handles: screenHandles(proxy: proxy, trip: trip), legs: legs) else { return }
+        let handles = screenHandles(proxy: proxy, trip: trip)
+        guard let target = grabPoints.lazy.compactMap({ RouteHitTest.target(at: $0, handles: handles, legs: legs) }).first else { return }
         routeDrag = RouteDrag(target: target, location: location)
     }
 

@@ -79,4 +79,49 @@ struct RouteViewModelTests {
         viewModel.removeWaypoint(at: 1, pair: pair, in: trip)
         #expect(repository.saved.map(\.waypoints) == [[a, b], [corner]])
     }
+
+    @Test func undoRestoresTheWaypointsBeforeTheLastEdit() {
+        let viewModel = makeViewModel()
+        let trip = makeTrip()
+        let pair = viewModel.pairs(of: trip)[0]
+        viewModel.beginEditing()
+        #expect(!viewModel.canUndo)
+
+        viewModel.insertWaypoint(corner, pair: pair, leg: 0, in: trip)
+        #expect(viewModel.canUndo)
+        viewModel.undo()
+
+        #expect(repository.saved.map(\.waypoints) == [[corner], []])
+        #expect(!viewModel.canUndo)
+    }
+
+    @Test func undoAllRestoresTheStateWhenEditingBegan() {
+        let viewModel = makeViewModel()
+        let trip = makeTrip()
+        let pair = viewModel.pairs(of: trip)[0]
+        let other = Coordinate(latitude: 35.01, longitude: 139.01)
+        viewModel.beginEditing()
+
+        viewModel.insertWaypoint(corner, pair: pair, leg: 0, in: trip)
+        var edited = pair
+        edited.waypoints = [corner]
+        viewModel.insertWaypoint(other, pair: edited, leg: 1, in: trip)
+        viewModel.undoAll()
+
+        // 2回直したあと、書き戻すのは「編集を始める前」の1回だけ。
+        #expect(repository.saved.last?.waypoints == [])
+        #expect(repository.saved.count == 3)
+        #expect(!viewModel.canUndo)
+    }
+
+    @Test func finishingEditingClearsTheHistory() {
+        let viewModel = makeViewModel()
+        let trip = makeTrip()
+        viewModel.beginEditing()
+        viewModel.insertWaypoint(corner, pair: viewModel.pairs(of: trip)[0], leg: 0, in: trip)
+
+        viewModel.finishEditing()
+        #expect(!viewModel.canUndo)
+        #expect(!viewModel.isEditing)
+    }
 }
