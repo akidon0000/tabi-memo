@@ -51,6 +51,7 @@ archive → export → upload の順に行う。ビルド番号は asc が自動
 `scripts/testflight.sh 6818975282` で Build 1(version 1.0)のアップロードまで成功(`processingState: VALID`)。内部グループ `Internal`(全ビルドにアクセス)を作成し、テスター `a@art.jp` を追加済み(招待メール送信、`akidon0000@gmail.com` は `Tester(s) cannot be assigned` で追加できなかった)。内部テスターは処理済みの全ビルドを自動で使える。
 
 - 2026-10-05: Build 2(version 1.0、リファクタリングと FB-1〜FB-9)をアップロード(`--notify` なし)。`processingState: VALID`。
+- 2026-10-05: Build 3(version 1.0、道なりの線・最初のピンの選択・長押しで追加。要件 0003)を `feature/route-and-long-press` ブランチからアップロード(`--notify` なし)。`processingState: VALID`。
 - SwiftLint のビルドツールプラグインを使うため、archive に `-skipPackagePluginValidation` を渡している(`scripts/testflight.sh`)。
 
 ## 注意
