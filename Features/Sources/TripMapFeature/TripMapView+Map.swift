@@ -12,14 +12,33 @@ extension TripMapView {
     private var pinSize: CGSize { CGSize(width: 60, height: 67) }
 
     func map(_ trip: Trip) -> some View {
+        MapReader { proxy in
+            mapContent(trip)
+                .gesture(longPress(on: proxy))
+                .sensoryFeedback(.impact, trigger: placement)
+        }
+    }
+
+    /// 地図の長押し。押した場所を座標にして、その場所に写真を追加する。
+    private func longPress(on proxy: MapProxy) -> some Gesture {
+        LongPressGesture(minimumDuration: 0.5)
+            .sequenced(before: DragGesture(minimumDistance: 0))
+            .onEnded { value in
+                guard case .second(true, let drag?) = value,
+                      let coordinate = proxy.convert(drag.location, from: .local) else { return }
+                addPhoto(at: Coordinate(coordinate))
+            }
+    }
+
+    private func mapContent(_ trip: Trip) -> some View {
         Map(position: $cameraPosition) {
             if trip.locationPoints.count > 1 {
                 MapPolyline(coordinates: trip.route.map(\.clLocationCoordinate))
                     .stroke(Color.accentColor, lineWidth: 3)
             }
-            // 写真を撮った順に結ぶ線。軌跡と見分けられるよう、白い破線にする。
-            if trip.activePhotos.count > 1 {
-                MapPolyline(coordinates: trip.activePhotos.map(\.coordinate.clLocationCoordinate))
+            // 写真を撮った順に結ぶ線。軌跡と見分けられるよう、白い破線にする。道に沿った経路が求まった区間は道なり、それ以外は直線。
+            if viewModel.photoPath.count > 1 {
+                MapPolyline(coordinates: viewModel.photoPath.map(\.clLocationCoordinate))
                     .stroke(.white, style: StrokeStyle(lineWidth: 3, lineCap: .round, dash: [6, 6]))
             }
             ForEach(clusters(of: trip)) { cluster in

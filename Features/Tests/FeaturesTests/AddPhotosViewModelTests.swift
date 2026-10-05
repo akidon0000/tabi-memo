@@ -17,11 +17,12 @@ struct AddPhotosViewModelTests {
     private let photoRepository = FakePhotoRepository()
     private let existing = Fixtures.photo("existing", minutes: 10)
 
-    private func makeViewModel(count: Int) -> AddPhotosViewModel {
+    private func makeViewModel(count: Int, placement: Coordinate? = nil) -> AddPhotosViewModel {
         AddPhotosViewModel(
             count: count,
             trip: Fixtures.trip(photos: [existing]),
             fallbackCenter: Coordinate(latitude: 0, longitude: 0),
+            placement: placement,
             readMetadata: ReadPhotoMetadataUseCase(reader: NoMetadata()),
             suggestText: SuggestPhotoTextUseCase(suggester: NoSuggestion()),
             addPhotos: AddPhotosUseCase(photoRepository: photoRepository)
@@ -66,5 +67,16 @@ struct AddPhotosViewModelTests {
         let viewModel = makeViewModel(count: 1)
         viewModel.drafts[0].takenAt = Fixtures.date(minutes: 11)
         #expect(viewModel.initialCenter(for: viewModel.drafts[0]) == existing.coordinate)
+    }
+
+    @Test func placementSetsEveryDraftToThePressedLocationAsManual() {
+        let pressed = Coordinate(latitude: 10, longitude: 20)
+        let viewModel = makeViewModel(count: 2, placement: pressed)
+        #expect(viewModel.drafts.allSatisfy { $0.coordinate == pressed && $0.isLocationManual })
+    }
+
+    @Test func withoutPlacementDraftsStartWithoutALocation() {
+        let viewModel = makeViewModel(count: 1)
+        #expect(viewModel.drafts[0].coordinate == nil)
     }
 }

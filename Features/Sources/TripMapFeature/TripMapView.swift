@@ -35,6 +35,10 @@ public struct TripMapView: View {
     @State var mapSize: CGSize = .zero
     /// 写真を保存した直後。次にトリップが更新されたら、写真が全部収まるよう地図を動かす。
     @State var fitsAfterAdding = false
+    /// 地図の長押しで指定された、追加する写真の位置。「+」から追加するときは nil。
+    @State var placement: Coordinate?
+    /// 開いた直後の、最初の写真への地図の移動を済ませたか。
+    @State var didFocusInitially = false
 
     /// 写真の追加の流れ。ピッカーで選んだ項目と、その入力状態を一組で持つ。
     struct AddFlow: Identifiable {
@@ -74,6 +78,12 @@ public struct TripMapView: View {
                 }
             }
             .animation(.easeOut(duration: 0.3), value: zoomedPhoto?.id)
+            .onAppear {
+                // 開いた直後は最初の写真が選ばれているので、地図もそのスポットへ動かす(パネルに隠れないように)。
+                guard !didFocusInitially, let photo = viewModel.selectedPhoto else { return }
+                didFocusInitially = true
+                focusMap(on: photo)
+            }
             .onChange(of: viewModel.selectedPhoto == nil) { _, isClosed in
                 if isClosed { panelFullProgress = 0 }
             }

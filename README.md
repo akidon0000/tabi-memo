@@ -13,9 +13,10 @@
 
 | できること | 画面の仕様 |
 |---|---|
-| 軌跡と、写真を撮った順のつながりを地図に描く。写真のピンを押すと、下のパネルに写真とメモが出る | [map-screen.md](docs/specs/map-screen.md) |
+| 軌跡と、写真を撮った順のつながりを地図に描く。開いたときは最初の写真が選ばれている。写真のピンを押すと、下のパネルに写真とメモが出る | [map-screen.md](docs/specs/map-screen.md) |
 | パネルを3段階(コンパクト・ハーフ・全開)で開く。全開では左右のスワイプで前後の写真へ移る | [map-screen.md](docs/specs/map-screen.md) |
 | 写真をまとめて追加する。撮影場所は写真の位置情報から入り、AI がタイトルとメモの案を出す | [add-photos.md](docs/specs/add-photos.md) |
+| 地図を長押しして、その場所に写真を追加する。写真を撮った順の白い破線は、道に沿って引かれる | [map-screen.md](docs/specs/map-screen.md) |
 | 写真の一覧で、並べ替え・取り除きをする | [photo-list.md](docs/specs/photo-list.md) |
 | 取り除いた写真は7日間「最近取り除いた項目」に残り、元に戻せる | [recently-deleted.md](docs/specs/recently-deleted.md) |
 

@@ -39,13 +39,21 @@ extension TripMapView {
             }
     }
 
+    /// 「+」から写真を追加する。位置は写真の位置情報から決める。
     func addPhoto() {
+        placement = nil
+        showPhotoPicker = true
+    }
+
+    /// 地図の長押しで、その場所に写真を追加する。選んだ写真は、すべてその位置に置く。
+    func addPhoto(at coordinate: Coordinate) {
+        placement = coordinate
         showPhotoPicker = true
     }
 
     /// ピッカーが閉じたあと、詳細入力のモーダルを(読み込み中の状態で)すぐ開く。
     private func startAddFlow(with items: [PhotosPickerItem], trip: Trip) {
-        let viewModel = children.makeAddPhotos(items.count, trip, fallbackCenter(for: trip))
+        let viewModel = children.makeAddPhotos(items.count, trip, fallbackCenter(for: trip), placement)
         Task {
             try? await Task.sleep(for: .milliseconds(400))
             addFlow = AddFlow(viewModel: viewModel, items: items)

@@ -7,10 +7,15 @@ public enum Fixtures {
         Date(timeIntervalSince1970: minutes * 60)
     }
 
-    public static func photo(_ title: String, minutes: Double, removedAt: Date? = nil) -> Photo {
+    public static func photo(
+        _ title: String,
+        minutes: Double,
+        removedAt: Date? = nil,
+        coordinate: Coordinate = Coordinate(latitude: 35, longitude: 139)
+    ) -> Photo {
         Photo(
             imageData: Data(),
-            coordinate: Coordinate(latitude: 35, longitude: 139),
+            coordinate: coordinate,
             takenAt: date(minutes: minutes),
             title: title,
             removedAt: removedAt

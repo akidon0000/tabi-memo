@@ -14,6 +14,8 @@ public final class AddPhotosViewModel {
     var entries: [ReorderEntry] = []
     /// 位置の初期値を求める材料が無いときに使う、地図の中心。
     let fallbackCenter: Coordinate
+    /// 地図の長押しで指定された位置。あれば、すべての写真の位置をここにする(写真の位置情報より優先)。
+    private let placement: Coordinate?
 
     private let trip: Trip
     private let readMetadata: ReadPhotoMetadataUseCase
@@ -24,16 +26,22 @@ public final class AddPhotosViewModel {
         count: Int,
         trip: Trip,
         fallbackCenter: Coordinate,
+        placement: Coordinate? = nil,
         readMetadata: ReadPhotoMetadataUseCase,
         suggestText: SuggestPhotoTextUseCase,
         addPhotos: AddPhotosUseCase
     ) {
         self.trip = trip
         self.fallbackCenter = fallbackCenter
+        self.placement = placement
         self.readMetadata = readMetadata
         self.suggestText = suggestText
         self.addPhotos = addPhotos
         let drafts = (0..<count).map { _ in PhotoDraft() }
+        for draft in drafts where placement != nil {
+            draft.coordinate = placement
+            draft.isLocationManual = true
+        }
         self.drafts = drafts
         currentID = drafts.first?.id
     }
@@ -57,7 +65,7 @@ public final class AddPhotosViewModel {
                 draft.takenAt = date
                 draft.hasMetadataDate = true
             }
-            draft.coordinate = metadata.coordinate
+            if placement == nil { draft.coordinate = metadata.coordinate }
         }
         prefetchSuggestions()
     }

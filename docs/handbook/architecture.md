@@ -20,7 +20,7 @@ flowchart LR
 | 場所 | 置くもの | import してよいもの |
 |---|---|---|
 | `Domain/`(パッケージ) | `Sources/Domain/` Entity(純粋な struct)・Rule(純粋な計算)・Repository と Service のプロトコル・UseCase。`Sources/TestSupport/` テスト用の偽物 | Foundation だけ |
-| `DataLayer/`(パッケージ) | `Sources/DataLayer/` `Records/` `@Model`(`〜Record`)と変換、`Repositories/` 実装、`Services/` 実装、`Persistence/` 保存先とデモデータ | Domain、SwiftData、ImageIO、FoundationModels、UIKit |
+| `DataLayer/`(パッケージ) | `Sources/DataLayer/` `Records/` `@Model`(`〜Record`)と変換、`Repositories/` 実装、`Services/` 実装(ImageIO・AI・MapKit の経路検索)、`Persistence/` 保存先とデモデータ | Domain、SwiftData、ImageIO、FoundationModels、UIKit |
 | `Features/`(パッケージ) | `Sources/<画面名>Feature/` 画面ごとの View と ViewModel。`Sources/SharedUI/` 複数の画面で使う部品 | Domain、SharedUI、依存する他の画面(下の表)、SwiftUI、MapKit、PhotosUI |
 | `TabiMemo/`(Xcode プロジェクト) | `Sources/` 起動(`TabiMemoApp`)と組み立て(`AppDependencies`)、Assets。`Info.plist` | すべて |
 

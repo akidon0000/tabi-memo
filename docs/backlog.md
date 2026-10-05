@@ -17,6 +17,15 @@
 | FB-8 | 体験の改善 | 全開で下へスクロールすると、同時にモーダルも閉じる | 同上 | 中 | 配信済み(Build 2)。コンパクトへ畳む | [0002](requirements/0002-map-and-panel-feedback.md) |
 | FB-9 | 体験の改善 | 左右にスワイプするとき、写真を薄くしなくてよいかもしれない | 同上 | 低 | 配信済み(Build 2) | [0002](requirements/0002-map-and-panel-feedback.md) |
 
+## 開発者本人の依頼(FB ではないもの)
+
+| ID | 内容 | 状態 | 要件 |
+|---|---|---|---|
+| R-1 | 写真を結ぶ白い破線を道なりにする | 実装済み・未配信 | [0003](requirements/0003-route-first-pin-long-press.md)・[ADR 0014](adr/0014-route-along-roads.md) |
+| R-2 | 開いたとき、撮影順で最初のピンを選んでおく | 実装済み・未配信 | [0003](requirements/0003-route-first-pin-long-press.md) |
+| R-3 | 地図の長押しで、その場所に写真を追加する | 実装済み・未配信 | [0003](requirements/0003-route-first-pin-long-press.md) |
+| R-4 | 位置情報の取り込み(HealthKit・写真ライブラリの位置と時刻・Google タイムライン) | 未着手。取り込み元を決めてから要件を書く | - |
+
 ## 既知の積み残し(FB ではなく、実装中に分かったもの)
 
 | 内容 | メモ |
