@@ -14,7 +14,9 @@ extension TripMapView {
     func map(_ trip: Trip) -> some View {
         MapReader { proxy in
             mapContent(trip)
-                .gesture(longPress(on: proxy))
+                .gesture(longPress(on: proxy), isEnabled: !viewModel.route.isEditing)
+                .gesture(routeEditGesture(proxy, trip: trip), isEnabled: viewModel.route.isEditing)
+                .overlay { routeDragMarker }
                 .sensoryFeedback(.impact, trigger: placement)
         }
     }
@@ -31,15 +33,26 @@ extension TripMapView {
     }
 
     private func mapContent(_ trip: Trip) -> some View {
-        Map(position: $cameraPosition) {
+        // 経路編集モードでは、設定によって地図の移動・拡大を止める(ドラッグが地図の移動と混ざらないように)。
+        Map(position: $cameraPosition, interactionModes: viewModel.route.isEditing && routeEditLocksMap ? [] : .all) {
             if trip.locationPoints.count > 1 {
                 MapPolyline(coordinates: trip.route.map(\.clLocationCoordinate))
                     .stroke(Color.accentColor, lineWidth: 3)
             }
             // 写真を撮った順に結ぶ線。軌跡と見分けられるよう、白い破線にする。道に沿った経路が求まった区間は道なり、それ以外は直線。
-            if viewModel.photoPath.count > 1 {
-                MapPolyline(coordinates: viewModel.photoPath.map(\.clLocationCoordinate))
+            if viewModel.route.path(of: trip).count > 1 {
+                MapPolyline(coordinates: viewModel.route.path(of: trip).map(\.clLocationCoordinate))
                     .stroke(.white, style: StrokeStyle(lineWidth: 3, lineCap: .round, dash: [6, 6]))
+            }
+            if viewModel.route.isEditing {
+                ForEach(waypointMarkers(trip)) { marker in
+                    Annotation("", coordinate: marker.coordinate.clLocationCoordinate, anchor: .center) {
+                        waypointDot
+                            .frame(width: 44, height: 44)
+                            .contentShape(Circle())
+                            .onTapGesture { removeWaypoint(marker, in: trip) }
+                    }
+                }
             }
             ForEach(clusters(of: trip)) { cluster in
                 Annotation(
@@ -58,15 +71,19 @@ extension TripMapView {
 
     @ViewBuilder
     private func pin(_ cluster: PhotoClustering.Cluster) -> some View {
-        if cluster.photos.count == 1 {
-            PhotoPinCallout(photo: cluster.photos[0]) {
-                viewModel.select(cluster.photos[0])
-            }
-        } else {
-            PhotoClusterCallout(photos: cluster.photos) {
-                openCluster(cluster)
+        Group {
+            if cluster.photos.count == 1 {
+                PhotoPinCallout(photo: cluster.photos[0]) {
+                    viewModel.select(cluster.photos[0])
+                }
+            } else {
+                PhotoClusterCallout(photos: cluster.photos) {
+                    openCluster(cluster)
+                }
             }
         }
+        // 経路編集モードでは、ピンを押してもパネルを開かない(線を掴む操作と混ざらないように)。
+        .allowsHitTesting(!viewModel.route.isEditing)
     }
 
     private func annotationTitle(_ cluster: PhotoClustering.Cluster) -> String {

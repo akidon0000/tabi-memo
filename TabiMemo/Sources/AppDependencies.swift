@@ -15,19 +15,22 @@ final class AppDependencies {
     private let metadataReader: any PhotoMetadataReading
     private let suggester: any PhotoSuggesting
     private let routeFinder: any RouteFinding
+    private let routeEditRepository: any RouteEditRepository
 
     init(
         tripRepository: any TripRepository,
         photoRepository: any PhotoRepository,
         metadataReader: any PhotoMetadataReading,
         suggester: any PhotoSuggesting,
-        routeFinder: any RouteFinding
+        routeFinder: any RouteFinding,
+        routeEditRepository: any RouteEditRepository
     ) {
         self.tripRepository = tripRepository
         self.photoRepository = photoRepository
         self.metadataReader = metadataReader
         self.suggester = suggester
         self.routeFinder = routeFinder
+        self.routeEditRepository = routeEditRepository
     }
 
     /// 端末に保存する本番の構成。初回はデモのトリップを入れる。
@@ -39,7 +42,8 @@ final class AppDependencies {
             photoRepository: SwiftDataPhotoRepository(store: store),
             metadataReader: ImageIOPhotoMetadataReader(),
             suggester: FoundationModelsPhotoSuggester(),
-            routeFinder: MapKitRouteFinder()
+            routeFinder: MapKitRouteFinder(),
+            routeEditRepository: SwiftDataRouteEditRepository(store: store)
         )
     }
 
@@ -64,7 +68,10 @@ final class AppDependencies {
             observeCurrentTrip: ObserveCurrentTripUseCase(tripRepository: tripRepository),
             purgeExpiredPhotos: PurgeExpiredPhotosUseCase(photoRepository: photoRepository),
             removePhoto: RemovePhotoUseCase(photoRepository: photoRepository),
-            findRoute: FindRouteUseCase(finder: routeFinder)
+            route: RouteViewModel(
+                findRoute: FindRouteUseCase(finder: routeFinder),
+                setWaypoints: SetRouteWaypointsUseCase(routeEditRepository: routeEditRepository)
+            )
         )
     }
 

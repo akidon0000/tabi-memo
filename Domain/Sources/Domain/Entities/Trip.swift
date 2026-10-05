@@ -8,6 +8,8 @@ public struct Trip: Identifiable, Hashable, Sendable {
     public var endedAt: Date?
     public var locationPoints: [LocationPoint]
     public var photos: [Photo]
+    /// 写真を結ぶ線の、ユーザーが直した内容。
+    public var routeEdits: [RouteEdit]
 
     public init(
         id: UUID = UUID(),
@@ -15,7 +17,8 @@ public struct Trip: Identifiable, Hashable, Sendable {
         startedAt: Date,
         endedAt: Date? = nil,
         locationPoints: [LocationPoint] = [],
-        photos: [Photo] = []
+        photos: [Photo] = [],
+        routeEdits: [RouteEdit] = []
     ) {
         self.id = id
         self.name = name
@@ -23,6 +26,7 @@ public struct Trip: Identifiable, Hashable, Sendable {
         self.endedAt = endedAt
         self.locationPoints = locationPoints
         self.photos = photos
+        self.routeEdits = routeEdits
     }
 
     /// 地図・一覧・前後の移動に使う写真。取り除いたものを除き、撮影日時の順。

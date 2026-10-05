@@ -50,4 +50,22 @@ struct PhotoPathTests {
         let finder = FakeRouteFinder(paths: [RouteSegment(from: a, to: b): [a, corner, b]])
         #expect(await FindRouteUseCase(finder: finder).execute(from: a, to: b) == [a, corner, b])
     }
+
+    @Test func waypointsSplitAPairIntoLegs() {
+        let middle = Coordinate(latitude: 35.01, longitude: 139.05)
+        let list = photos()
+        let edit = RouteEdit(fromPhotoID: list[0].id, toPhotoID: list[1].id, waypoints: [middle])
+
+        let pairs = PhotoPath.pairs(of: list, edits: [edit])
+        #expect(pairs[0].stops == [a, middle, b])
+        #expect(pairs[0].legs == [RouteSegment(from: a, to: middle), RouteSegment(from: middle, to: b)])
+        #expect(pairs[1].waypoints.isEmpty)
+        #expect(PhotoPath.coordinates(of: list, edits: [edit], using: [:]) == [a, middle, b, c])
+    }
+
+    @Test func aRouteEditForAnotherPairOfPhotosIsIgnored() {
+        let list = photos()
+        let edit = RouteEdit(fromPhotoID: list[0].id, toPhotoID: list[2].id, waypoints: [b])
+        #expect(PhotoPath.coordinates(of: list, edits: [edit], using: [:]) == [a, b, c])
+    }
 }

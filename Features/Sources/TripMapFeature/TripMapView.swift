@@ -39,6 +39,10 @@ public struct TripMapView: View {
     @State var placement: Coordinate?
     /// 開いた直後の、最初の写真への地図の移動を済ませたか。
     @State var didFocusInitially = false
+    /// 経路編集モードで、いま掴んでいる点・線。
+    @State var routeDrag: RouteDrag?
+    /// 経路編集モード中、地図の移動・拡大を止めるか(止めない案と見比べるための設定)。
+    @AppStorage("routeEditLocksMap") var routeEditLocksMap = true
 
     /// 写真の追加の流れ。ピッカーで選んだ項目と、その入力状態を一組で持つ。
     struct AddFlow: Identifiable {
@@ -68,7 +72,8 @@ public struct TripMapView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar(.hidden, for: .navigationBar)
             .overlay { panelLayer }
-            .overlay(alignment: .topTrailing) { moreMenu }
+            .overlay(alignment: .topTrailing) { if !viewModel.route.isEditing { moreMenu } }
+            .overlay(alignment: .top) { if viewModel.route.isEditing { routeEditBar } }
             // 拡大表示は下からせり上げず、後ろからふわっと(薄い・小さい状態から)出す。
             .overlay {
                 if let photo = zoomedPhoto {

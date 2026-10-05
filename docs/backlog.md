@@ -24,6 +24,7 @@
 | R-1 | 写真を結ぶ白い破線を道なりにする | 配信済み(Build 3) | [0003](requirements/0003-route-first-pin-long-press.md)・[ADR 0014](adr/0014-route-along-roads.md) |
 | R-2 | 開いたとき、撮影順で最初のピンを選んでおく | 配信済み(Build 3) | [0003](requirements/0003-route-first-pin-long-press.md) |
 | R-3 | 地図の長押しで、その場所に写真を追加する | 配信済み(Build 3) | [0003](requirements/0003-route-first-pin-long-press.md) |
+| R-5〜R-9 | 経路編集モード(「…」→「経路を編集」。白い破線を長押ししてドラッグすると経由点が付き、道なりに引き直す。保存する。地図を止める案・止めない案の2案を見比べ中) | 実装済み・未配信 | [0004](requirements/0004-route-edit-mode.md)・[ADR 0015](adr/0015-route-waypoints.md) |
 | R-4 | 位置情報の取り込み(HealthKit・写真ライブラリの位置と時刻・Google タイムライン) | 未着手。取り込み元を決めてから要件を書く | - |
 
 ## 既知の積み残し(FB ではなく、実装中に分かったもの)

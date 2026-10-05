@@ -15,6 +15,9 @@ final class TripRecord {
     @Relationship(deleteRule: .cascade, inverse: \PhotoRecord.trip)
     var photos: [PhotoRecord]
 
+    @Relationship(deleteRule: .cascade, inverse: \RouteEditRecord.trip)
+    var routeEdits: [RouteEditRecord]
+
     init(id: UUID = UUID(), name: String, startedAt: Date, endedAt: Date? = nil) {
         self.id = id
         self.name = name
@@ -22,5 +25,6 @@ final class TripRecord {
         self.endedAt = endedAt
         locationPoints = []
         photos = []
+        routeEdits = []
     }
 }

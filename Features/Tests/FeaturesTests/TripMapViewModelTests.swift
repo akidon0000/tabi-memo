@@ -10,15 +10,16 @@ struct TripMapViewModelTests {
     private let first = Fixtures.photo("first", minutes: 1)
     private let second = Fixtures.photo("second", minutes: 2)
 
-    private let routeFinder = FakeRouteFinder()
-
     private func makeViewModel(photos: [Photo]) -> (TripMapViewModel, Task<Void, Never>) {
         let tripRepository = FakeTripRepository(trips: [Fixtures.trip(photos: photos)])
         let viewModel = TripMapViewModel(
             observeCurrentTrip: ObserveCurrentTripUseCase(tripRepository: tripRepository),
             purgeExpiredPhotos: PurgeExpiredPhotosUseCase(photoRepository: photoRepository),
             removePhoto: RemovePhotoUseCase(photoRepository: photoRepository),
-            findRoute: FindRouteUseCase(finder: routeFinder)
+            route: RouteViewModel(
+                findRoute: FindRouteUseCase(finder: FakeRouteFinder()),
+                setWaypoints: SetRouteWaypointsUseCase(routeEditRepository: FakeRouteEditRepository())
+            )
         )
         let task = Task { await viewModel.start() }
         return (viewModel, task)
@@ -66,33 +67,5 @@ struct TripMapViewModelTests {
         defer { task.cancel() }
         await waitUntil { viewModel.trip != nil }
         #expect(viewModel.selectedPhotoID == nil)
-    }
-
-    @Test func photoPathUsesTheRouteFoundAlongTheRoad() async {
-        let a = Coordinate(latitude: 35.00, longitude: 139.00)
-        let b = Coordinate(latitude: 35.02, longitude: 139.02)
-        let corner = Coordinate(latitude: 35.00, longitude: 139.02)
-        routeFinder.paths = [RouteSegment(from: a, to: b): [a, corner, b]]
-        let (viewModel, task) = makeViewModel(photos: [
-            Fixtures.photo("a", minutes: 1, coordinate: a),
-            Fixtures.photo("b", minutes: 2, coordinate: b),
-        ])
-        defer { task.cancel() }
-
-        await waitUntil { viewModel.photoPath.count == 3 }
-        #expect(viewModel.photoPath == [a, corner, b])
-    }
-
-    @Test func photoPathFallsBackToAStraightLineWhenNoRouteIsFound() async {
-        let a = Coordinate(latitude: 35.00, longitude: 139.00)
-        let b = Coordinate(latitude: 35.02, longitude: 139.02)
-        let (viewModel, task) = makeViewModel(photos: [
-            Fixtures.photo("a", minutes: 1, coordinate: a),
-            Fixtures.photo("b", minutes: 2, coordinate: b),
-        ])
-        defer { task.cancel() }
-
-        await waitUntil { !routeFinder.requests.isEmpty }
-        #expect(viewModel.photoPath == [a, b])
     }
 }

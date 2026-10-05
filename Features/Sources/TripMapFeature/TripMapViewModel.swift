@@ -15,32 +15,25 @@ public final class TripMapViewModel {
     private(set) var hasLoaded = false
     /// パネルに表示中の写真。別のピンをタップしても、パネルは閉じずに中身だけ差し替える。
     var selectedPhotoID: Photo.ID?
-    /// 写真を撮影順に結ぶ線の、区間ごとの道なりの経路。まだ求めていない区間は、線が直線になる。
-    private(set) var routePaths: [RouteSegment: [Coordinate]] = [:]
+    /// 写真を撮影順に結ぶ線(道なりの経路と、経路編集モード)。
+    let route: RouteViewModel
 
     private var hasPurged = false
     private var hasSelectedInitially = false
-    private var routeTask: Task<Void, Never>?
     private let observeCurrentTrip: ObserveCurrentTripUseCase
     private let purgeExpiredPhotos: PurgeExpiredPhotosUseCase
     private let removePhoto: RemovePhotoUseCase
-    private let findRoute: FindRouteUseCase
 
     public init(
         observeCurrentTrip: ObserveCurrentTripUseCase,
         purgeExpiredPhotos: PurgeExpiredPhotosUseCase,
         removePhoto: RemovePhotoUseCase,
-        findRoute: FindRouteUseCase
+        route: RouteViewModel
     ) {
         self.observeCurrentTrip = observeCurrentTrip
         self.purgeExpiredPhotos = purgeExpiredPhotos
         self.removePhoto = removePhoto
-        self.findRoute = findRoute
-    }
-
-    /// 写真を撮影順に結ぶ線の座標。
-    var photoPath: [Coordinate] {
-        PhotoPath.coordinates(of: trip?.activePhotos ?? [], using: routePaths)
+        self.route = route
     }
 
     /// 選んでいる写真の最新の内容。取り除かれたり消えたりしたら nil(パネルが閉じる)。
@@ -56,7 +49,7 @@ public final class TripMapViewModel {
             hasLoaded = true
             guard let trip else { continue }
             selectFirstPhotoOnce(in: trip)
-            loadRoutes(for: trip)
+            route.refresh(for: trip)
             if !hasPurged {
                 hasPurged = true
                 try? purgeExpiredPhotos.execute(in: trip)
@@ -69,20 +62,6 @@ public final class TripMapViewModel {
         guard !hasSelectedInitially else { return }
         hasSelectedInitially = true
         selectedPhotoID = trip.activePhotos.first?.id
-    }
-
-    /// まだ求めていない区間の道なりの経路を、順に求める。求められなかった区間は直線のまま覚える(再起動までは求め直さない)。
-    private func loadRoutes(for trip: Trip) {
-        routeTask?.cancel()
-        let missing = PhotoPath.segments(of: trip.activePhotos).filter { routePaths[$0] == nil }
-        guard !missing.isEmpty else { return }
-        routeTask = Task {
-            for segment in missing {
-                let path = await findRoute.execute(from: segment.from, to: segment.to)
-                if Task.isCancelled { return }
-                routePaths[segment] = path
-            }
-        }
     }
 
     func select(_ photo: Photo) {

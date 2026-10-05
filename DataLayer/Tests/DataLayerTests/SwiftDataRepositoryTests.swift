@@ -79,6 +79,24 @@ struct SwiftDataRepositoryTests {
         try store.context.fetch(FetchDescriptor<TripRecord>()).first?.toDomain()
     }
 
+    @Test func routeEditsAreSavedReplacedAndRemoved() throws {
+        let routeEdits = SwiftDataRouteEditRepository(store: store)
+        let trip = try #require(try savedTrip())
+        let from = trip.activePhotos[0].id
+        let to = trip.activePhotos[1].id
+        let first = [Coordinate(latitude: 35.1, longitude: 139.1)]
+        let second = [Coordinate(latitude: 35.2, longitude: 139.2), Coordinate(latitude: 35.3, longitude: 139.3)]
+
+        try routeEdits.setWaypoints(first, from: from, to: to, in: trip.id)
+        #expect(try savedTrip()?.routeEdits == [RouteEdit(fromPhotoID: from, toPhotoID: to, waypoints: first)])
+
+        try routeEdits.setWaypoints(second, from: from, to: to, in: trip.id)
+        #expect(try savedTrip()?.routeEdits == [RouteEdit(fromPhotoID: from, toPhotoID: to, waypoints: second)])
+
+        try routeEdits.setWaypoints([], from: from, to: to, in: trip.id)
+        #expect(try savedTrip()?.routeEdits.isEmpty == true)
+    }
+
     @Test func addingToAMissingTripThrows() {
         #expect(throws: SwiftDataStoreError.self) {
             try photos.add([], to: UUID())

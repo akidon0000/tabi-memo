@@ -10,7 +10,9 @@ extension TripMapView {
     /// 写真を選んでいるときは下部パネル、選んでいないときは右下の追加ボタン。
     var panelLayer: some View {
         ZStack {
-            if let photo = viewModel.selectedPhoto {
+            if viewModel.route.isEditing {
+                EmptyView()
+            } else if let photo = viewModel.selectedPhoto {
                 photoPanel(photo)
                     .transition(.move(edge: .bottom))
             } else {
@@ -69,6 +71,11 @@ extension TripMapView {
             Button { showRecentlyDeleted = true } label: {
                 Label("最近取り除いた項目", systemImage: "trash")
             }
+            Divider()
+            Button { viewModel.route.isEditing = true } label: {
+                Label("経路を編集", systemImage: "point.topleft.down.to.point.bottomright.curvepath")
+            }
+            Toggle("経路の編集中は地図を動かさない", isOn: $routeEditLocksMap)
         } label: {
             Image(systemName: "ellipsis")
                 .font(.system(size: 17, weight: .semibold))

@@ -7,7 +7,7 @@ public final class SwiftDataStore {
     var context: ModelContext { container.mainContext }
 
     private init(inMemory: Bool) throws {
-        let schema = Schema([TripRecord.self, PhotoRecord.self, LocationPointRecord.self])
+        let schema = Schema([TripRecord.self, PhotoRecord.self, LocationPointRecord.self, RouteEditRecord.self])
         let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: inMemory)
         container = try ModelContainer(for: schema, configurations: configuration)
     }
