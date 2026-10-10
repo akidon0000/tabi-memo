@@ -11,7 +11,18 @@ extension TripRecord {
             startedAt: startedAt,
             endedAt: endedAt,
             locationPoints: locationPoints.map { $0.toDomain() },
-            photos: photos.map { $0.toDomain() }
+            photos: photos.map { $0.toDomain() },
+            routeEdits: routeEdits.map { $0.toDomain() }
+        )
+    }
+}
+
+extension RouteEditRecord {
+    func toDomain() -> RouteEdit {
+        RouteEdit(
+            fromPhotoID: fromPhotoID,
+            toPhotoID: toPhotoID,
+            waypoints: zip(latitudes, longitudes).map { Coordinate(latitude: $0, longitude: $1) }
         )
     }
 }

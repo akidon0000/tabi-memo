@@ -40,6 +40,8 @@
 | [0011](0011-ai-suggestion-placeholder.md) | AI の提案は、入力欄の薄い文字と「適用」で見せる | 有効 |
 | [0012](0012-xcode-json-project.md) | Tuist をやめ、Xcode の JSON 形式のプロジェクトをそのまま管理する | 有効 |
 | [0013](0013-swift-packages.md) | 層と画面を Swift Package に分け、アプリのプロジェクトは殻だけにする | 有効 |
+| [0014](0014-route-along-roads.md) | 写真を結ぶ線は、MapKit の経路検索で道なりにする | 有効 |
+| [0015](0015-route-waypoints.md) | 直した経路は、写真の組ごとの経由点として保存する | 有効 |
 
 ```mermaid
 flowchart LR
@@ -56,4 +58,6 @@ flowchart LR
     0009 --> 0012["0012 JSON のプロジェクト"]
     0012 --> 0013["0013 Swift Package に分ける"]
     0009 --> 0013
+    0005 --> 0014["0014 道なりの線"]
+    0014 --> 0015["0015 経由点を保存"]
 ```

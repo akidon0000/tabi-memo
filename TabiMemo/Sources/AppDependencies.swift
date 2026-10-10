@@ -14,17 +14,23 @@ final class AppDependencies {
     private let photoRepository: any PhotoRepository
     private let metadataReader: any PhotoMetadataReading
     private let suggester: any PhotoSuggesting
+    private let routeFinder: any RouteFinding
+    private let routeEditRepository: any RouteEditRepository
 
     init(
         tripRepository: any TripRepository,
         photoRepository: any PhotoRepository,
         metadataReader: any PhotoMetadataReading,
-        suggester: any PhotoSuggesting
+        suggester: any PhotoSuggesting,
+        routeFinder: any RouteFinding,
+        routeEditRepository: any RouteEditRepository
     ) {
         self.tripRepository = tripRepository
         self.photoRepository = photoRepository
         self.metadataReader = metadataReader
         self.suggester = suggester
+        self.routeFinder = routeFinder
+        self.routeEditRepository = routeEditRepository
     }
 
     /// 端末に保存する本番の構成。初回はデモのトリップを入れる。
@@ -35,7 +41,9 @@ final class AppDependencies {
             tripRepository: try SwiftDataTripRepository(store: store),
             photoRepository: SwiftDataPhotoRepository(store: store),
             metadataReader: ImageIOPhotoMetadataReader(),
-            suggester: FoundationModelsPhotoSuggester()
+            suggester: FoundationModelsPhotoSuggester(),
+            routeFinder: MapKitRouteFinder(),
+            routeEditRepository: SwiftDataRouteEditRepository(store: store)
         )
     }
 
@@ -51,7 +59,7 @@ final class AppDependencies {
             makeEditPhoto: { [self] in makeEditPhotoViewModel(photo: $0) },
             makePhotoList: { [self] in makePhotoListViewModel(tripID: $0) },
             makeRecentlyDeleted: { [self] in makeRecentlyDeletedViewModel(tripID: $0) },
-            makeAddPhotos: { [self] in makeAddPhotosViewModel(count: $0, trip: $1, fallbackCenter: $2) }
+            makeAddPhotos: { [self] in makeAddPhotosViewModel(count: $0, trip: $1, fallbackCenter: $2, placement: $3) }
         )
     }
 
@@ -59,15 +67,20 @@ final class AppDependencies {
         TripMapViewModel(
             observeCurrentTrip: ObserveCurrentTripUseCase(tripRepository: tripRepository),
             purgeExpiredPhotos: PurgeExpiredPhotosUseCase(photoRepository: photoRepository),
-            removePhoto: RemovePhotoUseCase(photoRepository: photoRepository)
+            removePhoto: RemovePhotoUseCase(photoRepository: photoRepository),
+            route: RouteViewModel(
+                findRoute: FindRouteUseCase(finder: routeFinder),
+                setWaypoints: SetRouteWaypointsUseCase(routeEditRepository: routeEditRepository)
+            )
         )
     }
 
-    private func makeAddPhotosViewModel(count: Int, trip: Trip, fallbackCenter: Coordinate) -> AddPhotosViewModel {
+    private func makeAddPhotosViewModel(count: Int, trip: Trip, fallbackCenter: Coordinate, placement: Coordinate?) -> AddPhotosViewModel {
         AddPhotosViewModel(
             count: count,
             trip: trip,
             fallbackCenter: fallbackCenter,
+            placement: placement,
             readMetadata: ReadPhotoMetadataUseCase(reader: metadataReader),
             suggestText: SuggestPhotoTextUseCase(suggester: suggester),
             addPhotos: AddPhotosUseCase(photoRepository: photoRepository)

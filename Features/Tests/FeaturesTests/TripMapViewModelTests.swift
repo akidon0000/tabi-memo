@@ -15,7 +15,11 @@ struct TripMapViewModelTests {
         let viewModel = TripMapViewModel(
             observeCurrentTrip: ObserveCurrentTripUseCase(tripRepository: tripRepository),
             purgeExpiredPhotos: PurgeExpiredPhotosUseCase(photoRepository: photoRepository),
-            removePhoto: RemovePhotoUseCase(photoRepository: photoRepository)
+            removePhoto: RemovePhotoUseCase(photoRepository: photoRepository),
+            route: RouteViewModel(
+                findRoute: FindRouteUseCase(finder: FakeRouteFinder()),
+                setWaypoints: SetRouteWaypointsUseCase(routeEditRepository: FakeRouteEditRepository())
+            )
         )
         let task = Task { await viewModel.start() }
         return (viewModel, task)
@@ -49,5 +53,19 @@ struct TripMapViewModelTests {
         defer { task.cancel() }
         await waitUntil { viewModel.trip != nil }
         #expect(photoRepository.deleted == [[expired.id]])
+    }
+
+    @Test func firstPhotoInShootingOrderIsSelectedOnOpen() async {
+        let (viewModel, task) = makeViewModel(photos: [second, first])
+        defer { task.cancel() }
+        await waitUntil { viewModel.selectedPhotoID != nil }
+        #expect(viewModel.selectedPhotoID == first.id)
+    }
+
+    @Test func nothingIsSelectedWhenThereAreNoPhotos() async {
+        let (viewModel, task) = makeViewModel(photos: [])
+        defer { task.cancel() }
+        await waitUntil { viewModel.trip != nil }
+        #expect(viewModel.selectedPhotoID == nil)
     }
 }

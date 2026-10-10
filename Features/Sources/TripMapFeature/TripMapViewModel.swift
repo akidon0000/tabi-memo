@@ -15,8 +15,13 @@ public final class TripMapViewModel {
     private(set) var hasLoaded = false
     /// パネルに表示中の写真。別のピンをタップしても、パネルは閉じずに中身だけ差し替える。
     var selectedPhotoID: Photo.ID?
+    /// 写真を撮影順に結ぶ線(道なりの経路と、経路編集モード)。
+    let route: RouteViewModel
+    /// 線に沿った再生。
+    let playback = PlaybackViewModel()
 
     private var hasPurged = false
+    private var hasSelectedInitially = false
     private let observeCurrentTrip: ObserveCurrentTripUseCase
     private let purgeExpiredPhotos: PurgeExpiredPhotosUseCase
     private let removePhoto: RemovePhotoUseCase
@@ -24,11 +29,13 @@ public final class TripMapViewModel {
     public init(
         observeCurrentTrip: ObserveCurrentTripUseCase,
         purgeExpiredPhotos: PurgeExpiredPhotosUseCase,
-        removePhoto: RemovePhotoUseCase
+        removePhoto: RemovePhotoUseCase,
+        route: RouteViewModel
     ) {
         self.observeCurrentTrip = observeCurrentTrip
         self.purgeExpiredPhotos = purgeExpiredPhotos
         self.removePhoto = removePhoto
+        self.route = route
     }
 
     /// 選んでいる写真の最新の内容。取り除かれたり消えたりしたら nil(パネルが閉じる)。
@@ -42,11 +49,21 @@ public final class TripMapViewModel {
         for await trip in observeCurrentTrip.execute() {
             self.trip = trip
             hasLoaded = true
-            if let trip, !hasPurged {
+            guard let trip else { continue }
+            selectFirstPhotoOnce(in: trip)
+            route.refresh(for: trip)
+            if !hasPurged {
                 hasPurged = true
                 try? purgeExpiredPhotos.execute(in: trip)
             }
         }
+    }
+
+    /// 開いたとき、撮影順で最初の写真を選んでおく。起動中に1回だけ(取り除いたあとに自動で選び直さない)。
+    private func selectFirstPhotoOnce(in trip: Trip) {
+        guard !hasSelectedInitially else { return }
+        hasSelectedInitially = true
+        selectedPhotoID = trip.activePhotos.first?.id
     }
 
     func select(_ photo: Photo) {

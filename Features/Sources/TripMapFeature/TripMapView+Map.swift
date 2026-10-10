@@ -12,15 +12,48 @@ extension TripMapView {
     private var pinSize: CGSize { CGSize(width: 60, height: 67) }
 
     func map(_ trip: Trip) -> some View {
-        Map(position: $cameraPosition) {
-            if trip.locationPoints.count > 1 {
-                MapPolyline(coordinates: trip.route.map(\.clLocationCoordinate))
-                    .stroke(Color.accentColor, lineWidth: 3)
+        MapReader { proxy in
+            mapContent(trip)
+                .gesture(longPress(on: proxy), isEnabled: !viewModel.route.isEditing)
+                .gesture(routeEditGesture(proxy, trip: trip), isEnabled: viewModel.route.isEditing)
+                .overlay { routeDragMarker }
+                .sensoryFeedback(.impact, trigger: placement)
+        }
+    }
+
+    /// 地図の長押し。押した場所を座標にして、その場所に写真を追加する。
+    private func longPress(on proxy: MapProxy) -> some Gesture {
+        LongPressGesture(minimumDuration: 0.5)
+            .sequenced(before: DragGesture(minimumDistance: 0))
+            .onEnded { value in
+                guard case .second(true, let drag?) = value,
+                      let coordinate = proxy.convert(drag.location, from: .local) else { return }
+                addPhoto(at: Coordinate(coordinate))
             }
-            // 写真を撮った順に結ぶ線。軌跡と見分けられるよう、白い破線にする。
-            if trip.activePhotos.count > 1 {
-                MapPolyline(coordinates: trip.activePhotos.map(\.coordinate.clLocationCoordinate))
-                    .stroke(.white, style: StrokeStyle(lineWidth: 3, lineCap: .round, dash: [6, 6]))
+    }
+
+    private func mapContent(_ trip: Trip) -> some View {
+        // 経路編集モードでは、設定によって地図の移動・拡大を止める(ドラッグが地図の移動と混ざらないように)。
+        Map(position: $cameraPosition, interactionModes: mapInteractionModes) {
+            // 写真を撮った順に結ぶ青い線。道に沿った経路が求まった区間は道なり、それ以外は直線。
+            if viewModel.route.path(of: trip).count > 1 {
+                MapPolyline(coordinates: viewModel.route.path(of: trip).map(\.clLocationCoordinate))
+                    .stroke(.blue, style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round))
+            }
+            if let sample = viewModel.playback.sample {
+                Annotation("", coordinate: sample.coordinate.clLocationCoordinate, anchor: .center) {
+                    playbackMarker(heading: sample.heading)
+                }
+            }
+            if viewModel.route.isEditing {
+                ForEach(waypointMarkers(trip)) { marker in
+                    Annotation("", coordinate: marker.coordinate.clLocationCoordinate, anchor: .center) {
+                        waypointDot
+                            .frame(width: 44, height: 44)
+                            .contentShape(Circle())
+                            .onTapGesture { removeWaypoint(marker, in: trip) }
+                    }
+                }
             }
             ForEach(clusters(of: trip)) { cluster in
                 Annotation(
@@ -39,15 +72,19 @@ extension TripMapView {
 
     @ViewBuilder
     private func pin(_ cluster: PhotoClustering.Cluster) -> some View {
-        if cluster.photos.count == 1 {
-            PhotoPinCallout(photo: cluster.photos[0]) {
-                viewModel.select(cluster.photos[0])
-            }
-        } else {
-            PhotoClusterCallout(photos: cluster.photos) {
-                openCluster(cluster)
+        Group {
+            if cluster.photos.count == 1 {
+                PhotoPinCallout(photo: cluster.photos[0]) {
+                    viewModel.select(cluster.photos[0])
+                }
+            } else {
+                PhotoClusterCallout(photos: cluster.photos) {
+                    openCluster(cluster)
+                }
             }
         }
+        // 経路編集モードでは、ピンを押してもパネルを開かない(線を掴む操作と混ざらないように)。
+        .allowsHitTesting(!viewModel.route.isEditing)
     }
 
     private func annotationTitle(_ cluster: PhotoClustering.Cluster) -> String {
@@ -78,6 +115,49 @@ extension TripMapView {
             return
         }
         move(toFit: cluster.photos.map(\.coordinate), minimumMeters: 50)
+    }
+
+    /// 経路編集の最中(設定が止める側のとき)と、再生の最中は、地図を指で動かせない。
+    private var mapInteractionModes: MapInteractionModes {
+        (viewModel.route.isEditing && routeEditLocksMap) || viewModel.playback.isPlaying ? [] : .all
+    }
+
+    /// 再生中に線の上を動く目印。進行方向を向く。
+    private func playbackMarker(heading: Double) -> some View {
+        Image(systemName: "location.north.fill")
+            .font(.system(size: 14, weight: .bold))
+            .foregroundStyle(.white)
+            .rotationEffect(.degrees(heading))
+            .frame(width: 30, height: 30)
+            .background(Circle().fill(Color.blue))
+            .overlay(Circle().stroke(.white, lineWidth: 3))
+            .shadow(radius: 3)
+            .allowsHitTesting(false)
+    }
+
+    /// 再生を始める・止める。始めるときは、いまの拡大率のまま、目印を追いかける。
+    func togglePlayback() {
+        if viewModel.playback.isPlaying {
+            viewModel.playback.stop()
+            return
+        }
+        guard let trip = viewModel.trip else { return }
+        playbackSpan = visibleRegion?.span ?? playbackSpan
+        viewModel.playback.start(
+            path: viewModel.route.path(of: trip),
+            photos: trip.activePhotos
+        )
+    }
+
+    /// 再生で止まっている写真。
+    func featuredPlaybackPhoto(in trip: Trip) -> Photo? {
+        guard let id = viewModel.playback.featuredPhotoID else { return nil }
+        return trip.activePhotos.first { $0.id == id }
+    }
+
+    /// 目印を地図の中心に置く(アニメーションなし。毎フレーム呼ばれる)。
+    func followPlayback(_ sample: PathPlayback.Sample) {
+        cameraPosition = .region(MKCoordinateRegion(center: sample.coordinate.clLocationCoordinate, span: playbackSpan))
     }
 
     /// 地図をその写真のスポットへ動かす(パネルに隠れない位置へ)。拡大率は変えない。

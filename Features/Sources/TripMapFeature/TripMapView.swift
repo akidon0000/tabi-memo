@@ -35,6 +35,16 @@ public struct TripMapView: View {
     @State var mapSize: CGSize = .zero
     /// 写真を保存した直後。次にトリップが更新されたら、写真が全部収まるよう地図を動かす。
     @State var fitsAfterAdding = false
+    /// 地図の長押しで指定された、追加する写真の位置。「+」から追加するときは nil。
+    @State var placement: Coordinate?
+    /// 開いた直後の、最初の写真への地図の移動を済ませたか。
+    @State var didFocusInitially = false
+    /// 経路編集モードで、いま掴んでいる点・線。
+    @State var routeDrag: RouteDrag?
+    /// 再生の間、地図の拡大率を保つための、再生を始めたときの表示範囲。
+    @State var playbackSpan = MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
+    /// 経路編集モード中、地図の移動・拡大を止めるか(止めない案と見比べるための設定)。
+    @AppStorage("routeEditLocksMap") var routeEditLocksMap = true
 
     /// 写真の追加の流れ。ピッカーで選んだ項目と、その入力状態を一組で持つ。
     struct AddFlow: Identifiable {
@@ -64,7 +74,16 @@ public struct TripMapView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar(.hidden, for: .navigationBar)
             .overlay { panelLayer }
-            .overlay(alignment: .topTrailing) { moreMenu }
+            // 再生中、写真の場所に着いたら、その写真を拡大して見せる。停止ボタンは、この上に出す。
+            .overlay {
+                if let photo = featuredPlaybackPhoto(in: trip) {
+                    PlaybackPhotoView(image: photo.image)
+                        .transition(.opacity.combined(with: .scale(scale: 0.6)))
+                }
+            }
+            .animation(.spring(duration: 0.45), value: viewModel.playback.featuredPhotoID)
+            .overlay(alignment: .topTrailing) { if !viewModel.route.isEditing { topControls } }
+            .overlay(alignment: .top) { if viewModel.route.isEditing { routeEditBar } }
             // 拡大表示は下からせり上げず、後ろからふわっと(薄い・小さい状態から)出す。
             .overlay {
                 if let photo = zoomedPhoto {
@@ -74,6 +93,15 @@ public struct TripMapView: View {
                 }
             }
             .animation(.easeOut(duration: 0.3), value: zoomedPhoto?.id)
+            .onChange(of: viewModel.playback.sample) { _, sample in
+                if let sample { followPlayback(sample) }
+            }
+            .onAppear {
+                // 開いた直後は最初の写真が選ばれているので、地図もそのスポットへ動かす(パネルに隠れないように)。
+                guard !didFocusInitially, let photo = viewModel.selectedPhoto else { return }
+                didFocusInitially = true
+                focusMap(on: photo)
+            }
             .onChange(of: viewModel.selectedPhoto == nil) { _, isClosed in
                 if isClosed { panelFullProgress = 0 }
             }
