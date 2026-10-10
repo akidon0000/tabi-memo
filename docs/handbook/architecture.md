@@ -19,12 +19,12 @@ flowchart LR
 
 | 場所 | 置くもの | import してよいもの |
 |---|---|---|
-| `Domain/`(パッケージ) | `Sources/Domain/` Entity(純粋な struct)・Rule(純粋な計算)・Repository と Service のプロトコル・UseCase。`Sources/TestSupport/` テスト用の偽物 | Foundation だけ |
-| `DataLayer/`(パッケージ) | `Sources/DataLayer/` `Records/` `@Model`(`〜Record`)と変換、`Repositories/` 実装、`Services/` 実装(ImageIO・AI・MapKit の経路検索)、`Persistence/` 保存先とデモデータ | Domain、SwiftData、ImageIO、FoundationModels、UIKit |
-| `Features/`(パッケージ) | `Sources/<画面名>Feature/` 画面ごとの View と ViewModel。`Sources/SharedUI/` 複数の画面で使う部品 | Domain、SharedUI、依存する他の画面(下の表)、SwiftUI、MapKit、PhotosUI |
-| `TabiMemo/`(Xcode プロジェクト) | `Sources/` 起動(`TabiMemoApp`)と組み立て(`AppDependencies`)、Assets。`Info.plist` | すべて |
+| `App/Domain/`(パッケージ) | `Sources/Domain/` Entity(純粋な struct)・Rule(純粋な計算)・Repository と Service のプロトコル・UseCase。`Sources/TestSupport/` テスト用の偽物 | Foundation だけ |
+| `App/DataLayer/`(パッケージ) | `Sources/DataLayer/` `Records/` `@Model`(`〜Record`)と変換、`Repositories/` 実装、`Services/` 実装(ImageIO・AI・MapKit の経路検索)、`Persistence/` 保存先とデモデータ | Domain、SwiftData、ImageIO、FoundationModels、UIKit |
+| `App/Features/`(パッケージ) | `Sources/<画面名>Feature/` 画面ごとの View と ViewModel。`Sources/SharedUI/` 複数の画面で使う部品 | Domain、SharedUI、依存する他の画面(下の表)、SwiftUI、MapKit、PhotosUI |
+| `App/TabiMemo/`(Xcode プロジェクト) | `Sources/` 起動(`TabiMemoApp`)と組み立て(`AppDependencies`)、Assets。`Info.plist` | すべて |
 
-画面のモジュールどうしの依存です。ここに無い依存を足すときは、`Features/Package.swift` の `dependencies` を直します。
+画面のモジュールどうしの依存です。ここに無い依存を足すときは、`App/Features/Package.swift` の `dependencies` を直します。
 
 | 画面のモジュール | 依存する画面 |
 |---|---|
@@ -65,7 +65,7 @@ sequenceDiagram
 | Service のプロトコル(Domain) | 動名詞(`-ing`) | `PhotoSuggesting` |
 | Service の実装(DataLayer) | 技術名 + 内容 | `FoundationModelsPhotoSuggester` |
 | 保存の型(DataLayer) | Entity 名 + `Record` | `PhotoRecord` |
-| 画面 | `XxxView` と `XxxViewModel` を、モジュール `XxxFeature` の `Sources/XxxFeature/` に置く | `Features/Sources/EditPhotoFeature/EditPhotoViewModel.swift` |
+| 画面 | `XxxView` と `XxxViewModel` を、モジュール `XxxFeature` の `Sources/XxxFeature/` に置く | `App/Features/Sources/EditPhotoFeature/EditPhotoViewModel.swift` |
 
 ### 書き方
 
@@ -75,7 +75,7 @@ sequenceDiagram
 - ViewModel は `@MainActor` の `@Observable final class` にします。UseCase をイニシャライザで受け取り、他の ViewModel や View を知らないようにします。
 - View は、ViewModel の状態を描くことと、操作を ViewModel に渡すことだけをします。地図のカメラ位置のような、見た目だけの状態は View の `@State` に置きます。
 - ViewModel は Domain の Entity と Rule を直接使ってかまいません(純粋な計算なので)。保存・読み込み・外部とのやり取りは、必ず UseCase を通します。
-- 組み立ては `TabiMemo/Sources/AppDependencies.swift` の1か所だけで行います。外から呼ぶのは `live()` と `makeTripMapView()` だけで、他の `make〜` は `private` です。画面は `AppDependencies` を知りません。子画面を開く画面は、子画面の ViewModel を作る関数を、イニシャライザで受け取ります(`TripMapChildren` が実例)。
+- 組み立ては `App/TabiMemo/Sources/AppDependencies.swift` の1か所だけで行います。外から呼ぶのは `live()` と `makeTripMapView()` だけで、他の `make〜` は `private` です。画面は `AppDependencies` を知りません。子画面を開く画面は、子画面の ViewModel を作る関数を、イニシャライザで受け取ります(`TripMapChildren` が実例)。
 - コメントには「なぜ」を書きます。コードを読めば分かる「何を」は書きません。
 
 ### 数値の上限(SwiftLint で検査)
@@ -87,7 +87,7 @@ sequenceDiagram
 | 関数の本体の行数 | 40 | 60 |
 | 1行の文字数(コメントは除く) | 180 | 240 |
 
-警告が出たら、分割してから終えます。設定は `.swiftlint.yml` にあります。変えるときは、この表も直します。
+警告が出たら、分割してから終えます。設定は `App/.swiftlint.yml` にあります。変えるときは、この表も直します。
 
 ### してはいけないこと
 
@@ -104,8 +104,8 @@ sequenceDiagram
 
 例として「写真のメモだけを書き換える」操作を足す場合です。
 
-1. Repository に必要な操作が無ければ、`Domain/Sources/Domain/Repositories/` のプロトコルに足し、`DataLayer/Sources/DataLayer/Repositories/` の実装と `Domain/Sources/TestSupport/FakePhotoRepository.swift` にも足します。
-2. `Domain/Sources/Domain/UseCases/UpdatePhotoMemoUseCase.swift` を作ります。
+1. Repository に必要な操作が無ければ、`App/Domain/Sources/Domain/Repositories/` のプロトコルに足し、`App/DataLayer/Sources/DataLayer/Repositories/` の実装と `App/Domain/Sources/TestSupport/FakePhotoRepository.swift` にも足します。
+2. `App/Domain/Sources/Domain/UseCases/UpdatePhotoMemoUseCase.swift` を作ります。
 
 ```swift
 import Foundation
@@ -126,15 +126,15 @@ public struct UpdatePhotoMemoUseCase {
 }
 ```
 
-3. `Domain/Tests/DomainTests/` に、偽物の Repository(`FakePhotoRepository`)を使ったテストを書きます。
-4. `TabiMemo/Sources/AppDependencies.swift` で、使う ViewModel に渡します。
+3. `App/Domain/Tests/DomainTests/` に、偽物の Repository(`FakePhotoRepository`)を使ったテストを書きます。
+4. `App/TabiMemo/Sources/AppDependencies.swift` で、使う ViewModel に渡します。
 
 ## 手順: 画面を1つ足す
 
-小さな実例は `Features/Sources/RecentlyDeletedFeature/` です(一覧の表示、元に戻す、完全に削除)。
+小さな実例は `App/Features/Sources/RecentlyDeletedFeature/` です(一覧の表示、元に戻す、完全に削除)。
 
-1. `Features/Package.swift` の `products` に `.library(name: "XxxFeature", targets: ["XxxFeature"])`、`targets` に `feature("XxxFeature")` を足します。他の画面を開くなら `feature("XxxFeature", dependsOn: ["EditPhotoFeature"])` のように書きます。
-2. `Features/Sources/XxxFeature/XxxViewModel.swift` を作ります。
+1. `App/Features/Package.swift` の `products` に `.library(name: "XxxFeature", targets: ["XxxFeature"])`、`targets` に `feature("XxxFeature")` を足します。他の画面を開くなら `feature("XxxFeature", dependsOn: ["EditPhotoFeature"])` のように書きます。
+2. `App/Features/Sources/XxxFeature/XxxViewModel.swift` を作ります。
 
 ```swift
 import Domain
@@ -190,9 +190,9 @@ public struct XxxView: View {
 }
 ```
 
-4. `TabiMemo/Sources/AppDependencies.swift` に `makeXxxViewModel(...)` を足し、アプリの `import` に `XxxFeature` を足します。
+4. `App/TabiMemo/Sources/AppDependencies.swift` に `makeXxxViewModel(...)` を足し、アプリの `import` に `XxxFeature` を足します。
 5. 開く側の画面(例: `TripMapFeature`)に、`Package.swift` で `XxxFeature` への依存を足し、`TripMapChildren` に `makeXxx` の関数を足して、シートなどを出します。
-6. `Features/Tests/FeaturesTests/` に、偽物の Repository で作った UseCase を渡して、ViewModel のテストを書きます。
+6. `App/Features/Tests/FeaturesTests/` に、偽物の Repository で作った UseCase を渡して、ViewModel のテストを書きます。
 
 ## テスト
 
@@ -203,6 +203,6 @@ public struct XxxView: View {
 | `Features` | `FeaturesTests` | ViewModel | 偽物の Repository で作った本物の UseCase |
 
 - テストは Swift Testing(`@Test`、`#expect`)で書きます。
-- 偽物は `Domain/Sources/TestSupport/` に手書きします(`public`)。`DomainTests` と `FeaturesTests` が使います。
+- 偽物は `App/Domain/Sources/TestSupport/` に手書きします(`public`)。`DomainTests` と `FeaturesTests` が使います。
 - まとめて動かすのは `scripts/test.sh`(1つでも失敗すると終了コードが 1 になります)。パッケージごとに動かすときは、そのフォルダで `xcodebuild test -scheme <スキーム名>` です([development.md](development.md))。
 - 画面の見た目は、シミュレーターで確認します。手順は [development.md](development.md) にあります。

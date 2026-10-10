@@ -17,8 +17,8 @@ for package in Domain DataLayer Features; do
   echo "== $package"
   # プロダクトが複数あるパッケージのスキームは「<名前>-Package」、1つだけなら「<名前>」になる。
   scheme="$package-Package"
-  (cd "$package" && xcodebuild -list 2>/dev/null) | grep -qx "[[:space:]]*$scheme" || scheme="$package"
-  (cd "$package" && xcodebuild test -scheme "$scheme" -destination "$DESTINATION" -skipPackagePluginValidation 2>&1) \
+  (cd "App/$package" && xcodebuild -list 2>/dev/null) | grep -qx "[[:space:]]*$scheme" || scheme="$package"
+  (cd "App/$package" && xcodebuild test -scheme "$scheme" -destination "$DESTINATION" -skipPackagePluginValidation 2>&1) \
     | grep -E "error:|Test run with|\*\* TEST"
   [ "${PIPESTATUS[0]}" -eq 0 ] || failed+=("$package")
 done

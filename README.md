@@ -76,7 +76,7 @@ flowchart TB
 
 - **Domain** には、アプリの決まりごとだけを置きます。SwiftUI も SwiftData も知りません。だからテストが速く、どこからでも使えます。
 - **DataLayer** は、Domain のプロトコルを SwiftData などで実装します。保存の仕方を変えても、画面は変わりません。
-- **Features** は画面です。画面ごとにモジュールが分かれていて、他の画面を使ってよいかは `Features/Package.swift` で決まります。
+- **Features** は画面です。画面ごとにモジュールが分かれていて、他の画面を使ってよいかは `App/Features/Package.swift` で決まります。
 - **TabiMemo**(アプリ)は、起動して部品を組み立てるだけです。組み立てるのは `AppDependencies` の1か所です。
 
 なぜこう分けたかは [ADR 0009](docs/adr/0009-clean-architecture.md)(層)と [ADR 0013](docs/adr/0013-swift-packages.md)(パッケージ)にあります。
@@ -109,30 +109,32 @@ sequenceDiagram
 
 ```text
 tabi-memo/
-├── TabiMemo/Sources/          アプリ。TabiMemoApp(起動)と AppDependencies(組み立て)
-├── TabiMemo.xcodeproj/        JSON 形式のプロジェクト(project.xcproj)。ターゲットは TabiMemo だけ
-├── Domain/
-│   ├── Sources/Domain/
-│   │   ├── Entities/          Trip・Photo などのデータ(純粋な struct)
-│   │   ├── Rules/             並び順・クラスタ・保持期間などの計算
-│   │   ├── Repositories/      保存のプロトコル
-│   │   ├── Services/          写真の読み取り・AI のプロトコル
-│   │   └── UseCases/          操作1つにつき1つの型(RemovePhotoUseCase など)
-│   ├── Sources/TestSupport/   テスト用の偽物の Repository
-│   └── Tests/
-├── DataLayer/Sources/DataLayer/
-│   ├── Records/               SwiftData の @Model(〜Record)と Entity への変換
-│   ├── Repositories/          Repository の実装
-│   ├── Services/              ImageIO・FoundationModels の実装
-│   └── Persistence/           保存先とデモデータ
-├── Features/Sources/
-│   ├── TripMapFeature/        地図の画面と、下のパネル(Components/CustomSheet)
-│   ├── PhotoListFeature/      写真の一覧
-│   ├── AddPhotosFeature/      写真の追加
-│   ├── EditPhotoFeature/      写真の編集
-│   ├── RecentlyDeletedFeature/ 最近取り除いた項目
-│   └── SharedUI/              複数の画面で使う部品
-├── scripts/                   test.sh(テスト)、testflight.sh(配信)
+├── App/                       コードはすべてここ。Xcode プロジェクトとパッケージ
+│   ├── TabiMemo/Sources/      アプリ。TabiMemoApp(起動)と AppDependencies(組み立て)
+│   ├── TabiMemo.xcodeproj/    JSON 形式のプロジェクト(project.xcproj)。ターゲットは TabiMemo だけ
+│   ├── .swiftlint.yml         SwiftLint の設定(各パッケージが引き継ぐ)
+│   ├── Domain/
+│   │   ├── Sources/Domain/
+│   │   │   ├── Entities/          Trip・Photo などのデータ(純粋な struct)
+│   │   │   ├── Rules/             並び順・クラスタ・保持期間などの計算
+│   │   │   ├── Repositories/      保存のプロトコル
+│   │   │   ├── Services/          写真の読み取り・AI のプロトコル
+│   │   │   └── UseCases/          操作1つにつき1つの型(RemovePhotoUseCase など)
+│   │   ├── Sources/TestSupport/   テスト用の偽物の Repository
+│   │   └── Tests/
+│   ├── DataLayer/Sources/DataLayer/
+│   │   ├── Records/               SwiftData の @Model(〜Record)と Entity への変換
+│   │   ├── Repositories/          Repository の実装
+│   │   ├── Services/              ImageIO・FoundationModels の実装
+│   │   └── Persistence/           保存先とデモデータ
+│   └── Features/Sources/
+│       ├── TripMapFeature/        地図の画面と、下のパネル(Components/CustomSheet)
+│       ├── PhotoListFeature/      写真の一覧
+│       ├── AddPhotosFeature/      写真の追加
+│       ├── EditPhotoFeature/      写真の編集
+│       ├── RecentlyDeletedFeature/ 最近取り除いた項目
+│       └── SharedUI/              複数の画面で使う部品
+├── scripts/                   test.sh(テスト)、testflight.sh(配信)、ota.sh(実機用の ipa)
 └── docs/                      ADR・handbook・画面の仕様
 ```
 

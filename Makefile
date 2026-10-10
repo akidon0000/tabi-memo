@@ -3,7 +3,7 @@
 SHELL := /bin/bash
 
 # 開く対象（ワークスペースを優先、なければプロジェクト）を自動検出
-TARGET := $(firstword $(wildcard *.xcworkspace) $(wildcard *.xcodeproj))
+TARGET := $(firstword $(wildcard App/*.xcworkspace) $(wildcard App/*.xcodeproj))
 
 ## xcode-open : Mac内のXcode一覧から矢印キーで選んで開く
 xcode-open:

@@ -22,7 +22,7 @@ xcuserdata/
 .build/
 
 # Release artifacts / signing
-build/
+/build/
 signing/
 
 # Package.resolved は管理しない(SwiftLint は Package.swift で版を固定している。docs/handbook/development.md)
