@@ -61,3 +61,35 @@ archive → export → upload の順に行う。ビルド番号は asc が自動
 - Foundation Models / PCC による提案は、実機で初めて動作を確認できる。TestFlight で確認すること。
 - 配信対象は iOS 27 以降([ADR 0009](../adr/0009-clean-architecture.md))。Apple Intelligence が使えない端末では提案欄が出ない。
 - Build 2 以降は、保存データの形が変わったため、Build 1 で入れた写真は引き継がれない。
+
+## 開発中の実機確認(OTA)
+
+TestFlight を待たずに実機で試したいときの手順([ADR 0016](../adr/0016-ota-ipa.md))。`build/` は git に入れていない。別のマシンで clone した場合も、下の準備をすれば同じように使える。
+
+### 準備(マシンごとに1回)
+
+| 項目 | 内容 |
+|---|---|
+| Xcode | 27 以降。`xcode-select -s` で向ける。Xcode にチーム `XSC9AJPSP3` の Apple ID でサインインしておく(自動署名と `-allowProvisioningUpdates` に使う) |
+| iPhone の登録 | iPhone の UDID が開発チームに登録されていること。未登録なら、iPhone を USB で Mac につなぎ、Xcode の Devices and Simulators で認識させるか、Apple Developer の Devices に追加する。登録後はプロファイルが自動で更新される |
+| Tailscale | Mac と iPhone の両方が同じ tailnet に接続している。tailnet の管理画面で MagicDNS と HTTPS 証明書を有効にしておく(OTA は HTTPS が必須) |
+| コマンド | `tailscale`(CLI)と `python3` が PATH にあること |
+
+### 実行
+
+```bash
+scripts/ota.sh              # archive → export → 配信(簡易サーバー + tailscale serve)
+scripts/ota.sh --no-serve   # ipa と manifest を build/ota/ に作るだけ
+```
+
+- 終わると、iPhone で開く URL(`https://<Mac の ts.net 名>/tabimemo/`)が出る。iPhone の Safari で開くと、インストールの確認ダイアログが自動で出る(出ないときはリンクをタップ)。「インストール」を押すと入る。確認ダイアログ自体は iOS の仕様で省けない。
+- ページには、ipa の作成時刻・バージョン・コミット・前回のビルド・直近10回の履歴が出る。履歴は `build/ota-history.json` に溜まる(マシンごと。git 管理外なので、別のマシンでは空から始まる)。
+- ビルド番号は Development 署名では常に 1。世代の区別は作成時刻とコミットで見る。
+
+### 仕組みと注意
+
+- `build/ota/` に `TabiMemo.ipa`・`manifest.plist`・`index.html` を作り、`python3 -m http.server`(127.0.0.1:8099)で配る。`tailscale serve` の `/tabimemo` をそこへプロキシする。macOS 版の Tailscale は `serve` でフォルダを直接配れないため。
+- `tailscale serve` の他のパス(例: `/` の 8080)には触れない。`ota.sh` は 8099 を使っているプロセスを止めて立て直すので、他の用途と衝突するなら `ota.sh` の `PORT` を変える。
+- 簡易サーバーは Mac の再起動で止まる。`scripts/ota.sh` をもう一度実行すれば立て直る。
+- 配信をやめるとき: `tailscale serve --set-path /tabimemo off`、と 8099 のプロセスを止める(`lsof -ti tcp:8099 | xargs kill`)。
+- 署名は `scripts/ExportOptions-dev.plist`(Development・自動署名)。Bundle ID やチームを変えたらここも直す。
