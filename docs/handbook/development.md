@@ -5,7 +5,7 @@
 
 ## 前提
 
-- Xcode 27 以降が必要。アプリのプロジェクトは JSON 形式の `TabiMemo.xcodeproj/project.xcproj` を git で管理する（[ADR 0012](../adr/0012-xcode-json-project.md)）。コードは Swift Package の `Domain/` `DataLayer/` `Features/` に分けてあり、プロジェクトは殻の1ターゲットだけ（[ADR 0013](../adr/0013-swift-packages.md)）。
+- Xcode 27 以降が必要。アプリのプロジェクトは JSON 形式の `App/TabiMemo.xcodeproj/project.xcproj` を git で管理する（[ADR 0012](../adr/0012-xcode-json-project.md)）。コードは Swift Package の `App/Domain/` `App/DataLayer/` `App/Features/` に分けてあり、プロジェクトは殻の1ターゲットだけ（[ADR 0013](../adr/0013-swift-packages.md)）。
 - 対象は iOS 27 以降（`project.xcproj` の `IPHONEOS_DEPLOYMENT_TARGET` と、各 `Package.swift` の `platforms`）。コードの構成は [architecture.md](architecture.md)。確認は iPhone 18 Pro のシミュレーターで行っている。
 - bundle id: `com.akidon0000.tabimemo`
 
@@ -29,7 +29,7 @@ scripts/test.sh <UDID>     # シミュレーターを指定する
 1つのパッケージだけ動かすときは、そのフォルダで次のようにする(スキーム名は、プロダクトが複数あるパッケージ(`Domain`、`Features`)では `<名前>-Package`、1つだけの `DataLayer` では `DataLayer`)。
 
 ```bash
-cd Features && xcodebuild test -scheme Features-Package \
+cd App/Features && xcodebuild test -scheme Features-Package \
   -destination 'platform=iOS Simulator,name=iPhone 18 Pro' -skipPackagePluginValidation
 ```
 
@@ -39,16 +39,16 @@ cd Features && xcodebuild test -scheme Features-Package \
 
 | したいこと | やり方 |
 |---|---|
-| ソースやテストを足す・消す | 該当モジュールのフォルダ(`Features/Sources/TripMapFeature/` など)に置く・消すだけ。`Package.swift` は書き換えない |
+| ソースやテストを足す・消す | 該当モジュールのフォルダ(`App/Features/Sources/TripMapFeature/` など)に置く・消すだけ。`Package.swift` は書き換えない |
 | 画面や層のモジュールを足す | 該当パッケージの `Package.swift` に、ターゲット(と `products`)を足す。画面は `feature("XxxFeature")` の1行。層は、同じ種類の既存のターゲットを写す。使い方は [architecture.md](architecture.md) の「画面を1つ足す」 |
-| アプリのビルド設定を変える | `project.xcproj` の `build-settings` を書き換える。`xcrun xcodeproj setting` でもよい。書き換えた後は `xcrun xcprojformatter --update TabiMemo.xcodeproj` |
+| アプリのビルド設定を変える | `project.xcproj` の `build-settings` を書き換える。`xcrun xcodeproj setting` でもよい。書き換えた後は `xcrun xcprojformatter --update App/TabiMemo.xcodeproj` |
 | パッケージの設定を変える | `Package.swift` の `swiftSettings` など。既定のアクターは `.defaultIsolation(MainActor.self)`(Domain は付けない) |
 | アプリがパッケージのプロダクトを使う | `project.xcproj` の `packages` と、ターゲットの `dependencies`・`package-product-members` に足す(既存の行を写す) |
 
 - `project.xcproj` は JSON（末尾のカンマを許す）。コメントは書けないので、設定の理由はこの handbook か ADR に書く。
-- アプリの Info.plist は `TabiMemo/Info.plist`。
-- スキームは `TabiMemo.xcodeproj/xcshareddata/xcschemes/TabiMemo.xcscheme` の1つだけ。
-- SwiftLint のバージョンは、各 `Package.swift` と `project.xcproj` の `packages` で 0.65.1 に固定している。設定は直下の `.swiftlint.yml` を、各パッケージの `.swiftlint.yml`(`parent_config`)で引き継ぐ。`Package.resolved` は git に入れていない(下の注意)。
+- アプリの Info.plist は `App/TabiMemo/Info.plist`。
+- スキームは `App/TabiMemo.xcodeproj/xcshareddata/xcschemes/TabiMemo.xcscheme` の1つだけ。
+- SwiftLint のバージョンは、各 `Package.swift` と `project.xcproj` の `packages` で 0.65.1 に固定している。設定は `App/.swiftlint.yml` を、各パッケージの `.swiftlint.yml`(`parent_config`)で引き継ぐ。`Package.resolved` は git に入れていない(下の注意)。
 - 注意: このマシンでは、`project.xcworkspace/xcshareddata/swiftpm/Package.resolved` を置いても、数秒で消える(2026-10-05 確認。何が消しているかは未特定)。バージョンを固定しているので、ビルドの再現性には影響しない。
 
 ## 起動と確認

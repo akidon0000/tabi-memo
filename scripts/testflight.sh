@@ -5,7 +5,7 @@
 #   asc auth login (once, globally — same key for every app under the team)
 #   ASC_APP_ID   App Store Connect app ID (numeric), or pass as $1
 #
-# The Xcode project is committed as JSON (TabiMemo.xcodeproj/project.xcproj, Xcode 27+), so there is no generate step.
+# The Xcode project is committed as JSON (App/TabiMemo.xcodeproj/project.xcproj, Xcode 27+), so there is no generate step.
 #
 # Usage: scripts/testflight.sh APP_ID [--group "Internal"] [--notify]
 set -euo pipefail
@@ -21,7 +21,7 @@ if [[ -z "$APP_ID" ]]; then
   exit 1
 fi
 
-PROJECT=TabiMemo.xcodeproj
+PROJECT=App/TabiMemo.xcodeproj
 SCHEME=TabiMemo
 VERSION=$(xcodebuild -project "$PROJECT" -scheme "$SCHEME" -skipPackagePluginValidation -showBuildSettings 2>/dev/null \
   | awk -F' = ' '/ MARKETING_VERSION = /{print $2; exit}')

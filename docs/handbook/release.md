@@ -44,7 +44,7 @@ scripts/testflight.sh <APP_ID>                              # アップロード
 scripts/testflight.sh <APP_ID> --group "Internal" --notify  # 内部テスターへ配信
 ```
 
-archive → export → upload の順に行う。ビルド番号は asc が自動で採番する(`manageAppVersionAndBuildNumber`)。バージョンは `TabiMemo.xcodeproj/project.xcproj` の `MARKETING_VERSION`。
+archive → export → upload の順に行う。ビルド番号は asc が自動で採番する(`manageAppVersionAndBuildNumber`)。バージョンは `App/TabiMemo.xcodeproj/project.xcproj` の `MARKETING_VERSION`。
 
 ## 確認済み(2026-10-04)
 

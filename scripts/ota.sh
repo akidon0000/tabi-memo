@@ -16,7 +16,7 @@ PORT=8099
 rm -rf build/ota-export "$OUT"
 mkdir -p "$OUT"
 
-xcodebuild archive -project TabiMemo.xcodeproj -scheme "$SCHEME" -configuration Release \
+xcodebuild archive -project App/TabiMemo.xcodeproj -scheme "$SCHEME" -configuration Release \
   -destination 'generic/platform=iOS' -archivePath "build/$SCHEME-dev.xcarchive" \
   -allowProvisioningUpdates -skipPackagePluginValidation
 xcodebuild -exportArchive -archivePath "build/$SCHEME-dev.xcarchive" \
