@@ -47,8 +47,10 @@ struct CustomSheetView<Content: View>: View {
     @State var scrollPosition = ScrollPosition(edge: .top)
     /// 全開で、中身がいちばん上のまま下へ引いている間 true。パネルが指に追従する(pullDownGesture)。
     @State var isPullingDown = false
-    /// いまの指の動きが「下へ引く」かどうかを、最初の動きで判定したか。
-    @State var pullChecked = false
+    /// 下へ引く動きの、直前の縦の移動量(nil なら、この指の最初の動き)。
+    @State var pullLastY: CGFloat?
+    /// 引き始めた時点の縦の移動量。パネルは、そこからの移動量だけ下がる。
+    @State var pullBase: CGFloat = 0
 
     let compactImageSize: CGFloat = 40
     let headerPadding: CGFloat = 16

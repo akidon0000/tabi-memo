@@ -8,39 +8,61 @@ extension CustomSheetView {
                 let w = value.translation.width, h = value.translation.height
                 dragTranslation = abs(w) > abs(h) * 1.5 ? 0 : h
             }
-            .onEnded { value in settleDrag(value, heights: heights) }
+            .onEnded { value in
+                settleDrag(
+                    width: value.translation.width,
+                    height: value.translation.height,
+                    predictedHeight: value.predictedEndTranslation.height,
+                    heights: heights
+                )
+            }
     }
 
-    /// 全開で、中身がいちばん上のときに下へ引くと、パネルが指に追従して下がる。離したら、近い段階へ吸着する。
-    /// 中身を下へスクロールしていた指は、途中でいちばん上に着いても追従させない(スクロールの続きなので)。
+    /// 全開で、中身のスクロールとパネルの引き下ろしを、1回の指の動きでつなげる。
+    /// 中身がいちばん上でないうちは、いつもどおり中身がスクロールする。下へ引いていて中身がいちばん上に着いたら、
+    /// そこからは中身を止めて、パネルが指に追従して下がる(着いた時点からの移動量だけ)。離したら、近い段階へ吸着する。
     func pullDownGesture(heights: SheetLayout.Heights) -> some Gesture {
         DragGesture(minimumDistance: 6, coordinateSpace: .global)
             .onChanged { value in
                 guard detent == .full else { return }
                 let w = value.translation.width, h = value.translation.height
-                if !pullChecked {
-                    pullChecked = true
-                    isPullingDown = scrollOffset <= 0.5 && h > 0 && abs(h) > abs(w) * 1.5
+                defer { pullLastY = h }
+                if !isPullingDown {
+                    // 縦の動きだけを見る(横は前後の写真のスワイプ)。
+                    guard abs(h) > abs(w) * 1.5, scrollOffset <= 0.5 else { return }
+                    // 最初からいちばん上なら 0 から、スクロールして上に着いたのなら、その時点から引き始める。
+                    if pullLastY == nil {
+                        guard h > 0 else { return }
+                        pullBase = 0
+                    } else {
+                        guard h > (pullLastY ?? h) else { return }
+                        pullBase = h
+                    }
+                    isPullingDown = true
                 }
-                guard isPullingDown else { return }
-                dragTranslation = max(h, 0)
+                dragTranslation = max(h - pullBase, 0)
             }
             .onEnded { value in
-                defer { pullChecked = false; isPullingDown = false }
+                defer { pullLastY = nil; pullBase = 0; isPullingDown = false }
                 guard isPullingDown else { return }
-                settleDrag(value, heights: heights)
+                settleDrag(
+                    width: value.translation.width,
+                    height: value.translation.height - pullBase,
+                    predictedHeight: value.predictedEndTranslation.height - pullBase,
+                    heights: heights
+                )
             }
     }
 
     /// 指を離したら、段階の切り替えと移動量の戻しを同じアニメーションで行う。
     /// 別々に行うと、離した瞬間に元の段階の高さへ一度戻ってから動き直し、カクついて見える(FB-4)。
-    private func settleDrag(_ value: DragGesture.Value, heights: SheetLayout.Heights) {
+    private func settleDrag(width: CGFloat, height dragHeight: CGFloat, predictedHeight: CGFloat, heights: SheetLayout.Heights) {
         // 横向きのドラッグは前後の写真への移動なので、段階は変えない。
-        if abs(value.translation.width) > abs(value.translation.height) * 1.5 {
+        if abs(width) > abs(dragHeight) * 1.5 {
             withAnimation(.spring(duration: 0.4, bounce: 0.15)) { dragTranslation = 0 }
             return
         }
-        let projected = height(for: detent, in: heights) - value.predictedEndTranslation.height
+        let projected = height(for: detent, in: heights) - predictedHeight
         let candidates: [(Detent, CGFloat)] = [
             (.compact, heights.compact),
             (.half, heights.half),
