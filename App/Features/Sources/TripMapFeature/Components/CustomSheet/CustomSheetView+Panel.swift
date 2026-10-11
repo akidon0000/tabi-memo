@@ -4,28 +4,33 @@ extension CustomSheetView {
     func panel(_ layout: SheetLayout) -> some View {
         let headerHeight = headerHeight(layout)
         let shape = panelShape(layout)
+        // 全開に近づくほど、パネルを上のセーフエリア(ステータスバーの裏)へ伸ばす。中身はその分だけ下げて、位置は変えない。
+        let ext = DeviceMetrics.windowSafeAreaTop * layout.fullProgress
 
         return ZStack(alignment: .top) {
             // ハーフまでは透明(ガラス越し)、全開で白。スクロール側ではなくここに敷いて、後ろの先読みカードの下にも白が来るようにする。
             Color(.systemBackground).opacity(layout.fullProgress)
 
-            scrollContent(layout, headerHeight: headerHeight)
+            ZStack(alignment: .top) {
+                scrollContent(layout, headerHeight: headerHeight)
 
-            // ハーフで、前後の写真を手前の写真の後ろに先読みして出す。全開ではヘッダー層に並べる(+Header)。
-            if !slidesPages, pageOffset != 0, let snap = neighbor?(peekStep) {
-                let topPad = lerp(
-                    (config.smallestDetentHeight - compactImageSize) / 2,
-                    24 + closeBarHeight * layout.fullProgress,
-                    layout.progress
-                )
-                peekCard(snap, layout: layout, topPad: topPad)
+                // ハーフで、前後の写真を手前の写真の後ろに先読みして出す。全開ではヘッダー層に並べる(+Header)。
+                if !slidesPages, pageOffset != 0, let snap = neighbor?(peekStep) {
+                    let topPad = lerp(
+                        (config.smallestDetentHeight - compactImageSize) / 2,
+                        24 + closeBarHeight * layout.fullProgress,
+                        layout.progress
+                    )
+                    peekCard(snap, layout: layout, topPad: topPad)
+                }
+
+                header(layout, height: headerHeight)
             }
-
-            header(layout, height: headerHeight)
+            .padding(.top, ext)
         }
         // 左右スワイプで前後の写真へ(ハーフ・全開)。指に追従して傾き、一定以上動かすと飛んでいって次の写真が入る(Tinder 風)。
         .simultaneousGesture(swipeGesture(pageWidth: layout.panelWidth))
-        .frame(width: layout.panelWidth, height: layout.panelHeight, alignment: .top)
+        .frame(width: layout.panelWidth, height: layout.panelHeight + ext, alignment: .top)
         .clipShape(shape)
         // Liquid Glass。ヘッダーの色を tint として乗せる。
         .glassEffect(.regular.tint(config.headerTint.opacity(0.3)), in: shape)
@@ -100,7 +105,7 @@ extension CustomSheetView {
         }
     }
 
-    /// コンパクトはカプセル、広がるにつれて端末の画面角に同心の丸みへ移る。全開では角丸なし。
+    /// コンパクトはカプセル、広がるにつれて端末の画面角に同心の丸みへ移る。全開では余白がなくなり、画面角そのものの丸みになる。
     /// パネルの角の半径(全開で 0 にする前の値)。
     func panelRadius(progress: CGFloat) -> CGFloat {
         let capsule = config.smallestDetentHeight / 2
@@ -109,7 +114,7 @@ extension CustomSheetView {
     }
 
     private func panelShape(_ layout: SheetLayout) -> UnevenRoundedRectangle {
-        let radius = panelRadius(progress: layout.progress) * (1 - layout.fullProgress)
+        let radius = lerp(panelRadius(progress: layout.progress), DeviceMetrics.cornerRadius, layout.fullProgress)
         return UnevenRoundedRectangle(
             topLeadingRadius: radius,
             bottomLeadingRadius: radius,

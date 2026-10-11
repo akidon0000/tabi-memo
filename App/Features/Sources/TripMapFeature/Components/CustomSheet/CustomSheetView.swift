@@ -97,13 +97,6 @@ struct CustomSheetView<Content: View>: View {
                 isTouching = pressing
                 if pressing { withAnimation(.easeOut(duration: 0.1)) { barNudge = 0 } }
             }
-            // 全開のときは、上のセーフエリア(ステータスバー側)も白にする。
-            .overlay(alignment: .top) {
-                Color(.systemBackground)
-                    .frame(height: DeviceMetrics.windowSafeAreaTop)
-                    .opacity(layout.fullProgress)
-                    .allowsHitTesting(false)
-            }
         }
     }
 }

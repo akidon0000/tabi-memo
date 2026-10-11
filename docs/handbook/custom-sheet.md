@@ -47,7 +47,7 @@ CustomSheetView(
 | `+Gestures.swift` | 縦ドラッグ(段階)と左右スワイプ(前後の写真) |
 | `+Detent.swift` | バーのタップ、畳む操作、全開での揺らし |
 
-- **進行度が2つある。** `progress`（コンパクト→ハーフで 0→1）がヘッダーの変形を、`fullProgress`（ハーフ→全開で 0→1）が白い背景・余白・角丸の消え方を決める。
+- **進行度が2つある。** `progress`（コンパクト→ハーフで 0→1）がヘッダーの変形を、`fullProgress`（ハーフ→全開で 0→1）が白い背景・余白の消え方と、パネルが画面の上端へ伸びる量を決める。
 - **ヘッダーは2層。** 写真・タイトルはスクロール量だけ上へ流れる層。バー・× と白い背景は上に固定された層（写真がこの下をくぐる）。
 - **段階の切り替え**は `detent`（`.compact` / `.half` / `.full`）と、バーのタップ・ドラッグ・× が書き換える。
 
@@ -57,5 +57,6 @@ CustomSheetView(
 - **全開ではヘッダーのタッチを無効にする。** 下のスクロールに通すため。縦ドラッグは上部の固定行だけが受ける。
 - **白い背景はスクロール側ではなく、先読みカードの下に敷く。** スクロール側に敷くと、後ろの先読みカードが隠れる。
 - **ガラス（`glassEffect`）は `opacity` で消えない場面がある。** 追加ボタンは `GlassEffectContainer` に入れない。
-- **全開の上端**は、ウィンドウの `safeAreaInsets.top` を読んで引く(`DeviceMetrics.windowSafeAreaTop`)（親が `ignoresSafeArea` のため `GeometryReader` からは取れない）。
+- **全開の上端**は、ウィンドウの `safeAreaInsets.top` を読んで引く(`DeviceMetrics.windowSafeAreaTop`)（親が `ignoresSafeArea` のため `GeometryReader` からは取れない）。段階の高さ(`heights.full`)はセーフエリアの下までで、`+Panel` が `fullProgress` に応じてその分だけパネルを上へ伸ばし、中身を同じ量だけ下げる。ステータスバーの裏もパネルの白い面になる([ADR 0018](../adr/0018-sheet-extends-to-top.md))。
+- **全開の角の丸みは画面角そのもの。** 余白が 0 になるので、同心の式(画面角 − 余白)が画面角の半径になる。
 - **画面角の半径は非公開キー。** → [ADR 0004](../adr/0004-private-corner-radius.md)
