@@ -57,6 +57,24 @@ cd App/Features && xcodebuild test -scheme Features-Package \
 2. ビルド成果物（`~/Library/Developer/Xcode/DerivedData/TabiMemo-*/Build/Products/Debug-iphonesimulator/TabiMemo.app`）を起動する。`TabiMemo-*` が複数あるときは更新日時が新しい方。
 3. 起動直後は地図の読み込みが終わるまで数秒、タップが効かない。ピンを押す前に待つ。
 
+## 別の Mac からリモートで確認する(画面共有)
+
+家の Mac(ビルドするほう)のシミュレーターを、別の Mac から見て操作する手順。Tailscale の中だけで使い、ルーターのポート開放はしない。
+
+1. 家の Mac: システム設定 → 一般 → 共有 → 「画面共有」をオンにし、許可するユーザーを自分のアカウントだけにする。スリープすると接続できないので、省エネルギーで、ディスプレイがオフのときにスリープさせない設定にしておく。
+2. 手元の Mac: Tailscale につなぐ。Spotlight(⌘+スペース)で「画面共有」を開き、ホスト名に次を入れる。名前で引けないときは Tailscale の IP を使う。
+
+```bash
+open vnc://<家の Mac の Tailscale 名>     # `tailscale status` の1列目か、`tailscale ip -4`
+```
+
+3. 求められるユーザー名とパスワードは、家の Mac のログイン情報。手元の Mac のものではない。
+
+- 同じ Wi-Fi 内の名前(`<名前>.local` の Bonjour 名)は、Tailscale 越しでは引けない。
+- Finder の「移動 → サーバへ接続」(⌘K)でもよい。メニューバーに「移動」が出ないときは、Finder が前面にない。
+- Simulator は画面が大きいので、共有ウィンドウを全画面にするか、Simulator を縮小表示にして操作する。
+- 実機(iPhone)への確認は、画面共有ではなく OTA([release.md](release.md))を使う。
+
 ## デモデータを入れ直す
 
 デモ（渋谷→代々木公園の3枚）は**初回起動時だけ**入る。データモデルやデモの内容を変えたら、アプリを消して入れ直す。
