@@ -4,7 +4,7 @@ import SwiftUI
 /// コンパクト時はバナーと円形の追加ボタンを完全に別のビューとして横並びにできる。
 ///
 /// ファイルの分け方: 大きさの計算は +Layout、パネル本体は +Panel、写真とタイトルは +Header、
-/// ボタン類は +Controls、ドラッグとスワイプは +Gestures、段階の切り替えと全開の揺らしは +Detent。
+/// ボタン類は +Controls、ドラッグとスワイプは +Gestures、段階の切り替えは +Detent。
 struct CustomSheetView<Content: View>: View {
     @Binding var config: CustomSheetConfig
     var title: String
@@ -38,7 +38,6 @@ struct CustomSheetView<Content: View>: View {
     /// 縦ドラッグの移動量。指を離したら、段階の切り替えと同じアニメーションで 0 に戻す(FB-4)。
     @State var dragTranslation: CGFloat = 0
     @State var scrollOffset: CGFloat = 0
-    @State var barNudge: CGFloat = 0
     @State var pageOffset: CGFloat = 0
     @State var pageScale: CGFloat = 1
     /// 入れ替わった直後の文字の濃さ(0→1)。
@@ -46,9 +45,6 @@ struct CustomSheetView<Content: View>: View {
     @State var isSwiping = false
     @State var peekStep = 1
     @State var scrollPosition = ScrollPosition(edge: .top)
-    /// 指がヘッダーに触れている間 true。揺らしの判定に使う(task から読めるよう @State に写す)。
-    @GestureState var isPressing = false
-    @State var isTouching = false
     /// 全開の中身を指でスクロールしている間 true。下へ引いて閉じる判定に使う。
     @State var isScrollInteracting = false
 
@@ -92,11 +88,6 @@ struct CustomSheetView<Content: View>: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
             .onChange(of: layout.fullProgress) { _, value in onFullProgressChange?(value) }
-            .task(id: detent) { await runNudgeLoop() }
-            .onChange(of: isPressing) { _, pressing in
-                isTouching = pressing
-                if pressing { withAnimation(.easeOut(duration: 0.1)) { barNudge = 0 } }
-            }
         }
     }
 }

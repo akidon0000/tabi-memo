@@ -10,10 +10,6 @@ extension CustomSheetView {
                 // 全開では下の ScrollView にタッチを通す(スクロール・縦ドラッグの競合を避ける)。
                 .allowsHitTesting(detent != .full)
                 .gesture(dragGesture(heights: layout.heights))
-                .simultaneousGesture(
-                    DragGesture(minimumDistance: 0, coordinateSpace: .global)
-                        .updating($isPressing) { _, state, _ in state = true }
-                )
 
             fixedRow(layout)
         }
@@ -142,10 +138,8 @@ extension CustomSheetView {
             Capsule()
                 .fill(.secondary.opacity(0.6))
                 .frame(width: 36, height: 5)
-                // 全開に向かうほど、右の×と同じ横一列(中心をそろえる)へ寄せる。
-                .padding(.top, lerp(6, closeRowTop + closeButtonSize / 2 - 2.5, layout.fullProgress))
-                // 全開で「下にスワイプできる」ことを知らせるときに、下へ揺らす。
-                .offset(y: barNudge)
+                // 全開でも、ハーフと同じく上のセーフエリアのすぐ下に置く(×の行より上)。
+                .padding(.top, 6)
                 .allowsHitTesting(false)
                 .frame(maxHeight: .infinity, alignment: .top)
 
