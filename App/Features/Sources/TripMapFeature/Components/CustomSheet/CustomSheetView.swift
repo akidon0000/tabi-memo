@@ -45,8 +45,10 @@ struct CustomSheetView<Content: View>: View {
     @State var isSwiping = false
     @State var peekStep = 1
     @State var scrollPosition = ScrollPosition(edge: .top)
-    /// 全開の中身を指でスクロールしている間 true。下へ引いて閉じる判定に使う。
-    @State var isScrollInteracting = false
+    /// 全開で、中身がいちばん上のまま下へ引いている間 true。パネルが指に追従する(pullDownGesture)。
+    @State var isPullingDown = false
+    /// いまの指の動きが「下へ引く」かどうかを、最初の動きで判定したか。
+    @State var pullChecked = false
 
     let compactImageSize: CGFloat = 40
     let headerPadding: CGFloat = 16
@@ -62,8 +64,6 @@ struct CustomSheetView<Content: View>: View {
     /// 全開の上の行(バーと×)を置く、パネル上端からの距離。
     let closeRowTop: CGFloat = 8
     let expandedMargin: CGFloat = 8
-    /// 全開で、いちばん上からさらにこの距離だけ下へ引くと、パネルを閉じる(FB-8)。
-    let pullToCloseDistance: CGFloat = 70
 
     var body: some View {
         GeometryReader { proxy in

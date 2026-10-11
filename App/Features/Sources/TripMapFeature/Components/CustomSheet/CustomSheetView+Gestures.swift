@@ -2,32 +2,55 @@ import SwiftUI
 
 extension CustomSheetView {
     /// 縦のドラッグで段階を変える。指を離した後の慣性を含めた到達点に、一番近い高さへ吸着する。
-    /// 指を離したら、段階の切り替えと移動量の戻しを同じアニメーションで行う。
-    /// 別々に行うと、離した瞬間に元の段階の高さへ一度戻ってから動き直し、カクついて見える(FB-4)。
     func dragGesture(heights: SheetLayout.Heights) -> some Gesture {
         DragGesture(coordinateSpace: .global)
             .onChanged { value in
                 let w = value.translation.width, h = value.translation.height
                 dragTranslation = abs(w) > abs(h) * 1.5 ? 0 : h
             }
-            .onEnded { value in
-                // 横向きのドラッグは前後の写真への移動なので、段階は変えない。
-                if abs(value.translation.width) > abs(value.translation.height) * 1.5 {
-                    withAnimation(.spring(duration: 0.4, bounce: 0.15)) { dragTranslation = 0 }
-                    return
+            .onEnded { value in settleDrag(value, heights: heights) }
+    }
+
+    /// 全開で、中身がいちばん上のときに下へ引くと、パネルが指に追従して下がる。離したら、近い段階へ吸着する。
+    /// 中身を下へスクロールしていた指は、途中でいちばん上に着いても追従させない(スクロールの続きなので)。
+    func pullDownGesture(heights: SheetLayout.Heights) -> some Gesture {
+        DragGesture(minimumDistance: 6, coordinateSpace: .global)
+            .onChanged { value in
+                guard detent == .full else { return }
+                let w = value.translation.width, h = value.translation.height
+                if !pullChecked {
+                    pullChecked = true
+                    isPullingDown = scrollOffset <= 0.5 && h > 0 && abs(h) > abs(w) * 1.5
                 }
-                let projected = height(for: detent, in: heights) - value.predictedEndTranslation.height
-                let candidates: [(Detent, CGFloat)] = [
-                    (.compact, heights.compact),
-                    (.half, heights.half),
-                    (.full, heights.full),
-                ]
-                let nearest = candidates.min { abs($0.1 - projected) < abs($1.1 - projected) }?.0 ?? detent
-                withAnimation(.spring(duration: 0.4, bounce: 0.15)) {
-                    detent = nearest
-                    dragTranslation = 0
-                }
+                guard isPullingDown else { return }
+                dragTranslation = max(h, 0)
             }
+            .onEnded { value in
+                defer { pullChecked = false; isPullingDown = false }
+                guard isPullingDown else { return }
+                settleDrag(value, heights: heights)
+            }
+    }
+
+    /// 指を離したら、段階の切り替えと移動量の戻しを同じアニメーションで行う。
+    /// 別々に行うと、離した瞬間に元の段階の高さへ一度戻ってから動き直し、カクついて見える(FB-4)。
+    private func settleDrag(_ value: DragGesture.Value, heights: SheetLayout.Heights) {
+        // 横向きのドラッグは前後の写真への移動なので、段階は変えない。
+        if abs(value.translation.width) > abs(value.translation.height) * 1.5 {
+            withAnimation(.spring(duration: 0.4, bounce: 0.15)) { dragTranslation = 0 }
+            return
+        }
+        let projected = height(for: detent, in: heights) - value.predictedEndTranslation.height
+        let candidates: [(Detent, CGFloat)] = [
+            (.compact, heights.compact),
+            (.half, heights.half),
+            (.full, heights.full),
+        ]
+        let nearest = candidates.min { abs($0.1 - projected) < abs($1.1 - projected) }?.0 ?? detent
+        withAnimation(.spring(duration: 0.4, bounce: 0.15)) {
+            detent = nearest
+            dragTranslation = 0
+        }
     }
 
     /// 左右スワイプで前後の写真へ。ハーフ・全開のときだけ(コンパクトでは地図の操作と紛れるため移らない)。

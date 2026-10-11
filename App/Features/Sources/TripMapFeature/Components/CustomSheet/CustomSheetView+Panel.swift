@@ -59,16 +59,14 @@ extension CustomSheetView {
                 }
         }
         .scrollPosition($scrollPosition)
-        .scrollDisabled(detent != .full)
+        // 全開で下へ引くパネルの追従は pullDownGesture が担う。引き始めたら中身のスクロールを止める。
+        // 止めないと、中身がバウンスで下がる分と、パネルが下がる分で、二重に動く。
+        .scrollDisabled(detent != .full || isPullingDown)
+        .simultaneousGesture(pullDownGesture(heights: layout.heights))
         .onScrollGeometryChange(for: CGFloat.self) { geometry in
             geometry.contentOffset.y + geometry.contentInsets.top
         } action: { _, offset in
             scrollOffset = max(offset, 0)
-            // 全開で、いちばん上からさらに下へ引いたら、パネルを閉じる(FB-8)。
-            if offset < -pullToCloseDistance, detent == .full, isScrollInteracting { collapse() }
-        }
-        .onScrollPhaseChange { _, phase in
-            isScrollInteracting = phase == .interacting
         }
     }
 

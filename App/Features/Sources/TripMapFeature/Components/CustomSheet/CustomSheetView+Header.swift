@@ -137,7 +137,7 @@ extension CustomSheetView {
 
             Capsule()
                 .fill(.secondary.opacity(0.6))
-                .frame(width: 36, height: 5)
+                .frame(width: 48, height: 5)
                 // 全開でも、ハーフと同じく上のセーフエリアのすぐ下に置く(×の行より上)。
                 .padding(.top, 6)
                 .allowsHitTesting(false)
