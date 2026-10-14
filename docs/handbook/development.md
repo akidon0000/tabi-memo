@@ -73,7 +73,20 @@ open vnc://<家の Mac の Tailscale 名>     # `tailscale status` の1列目か
 - 同じ Wi-Fi 内の名前(`<名前>.local` の Bonjour 名)は、Tailscale 越しでは引けない。
 - Finder の「移動 → サーバへ接続」(⌘K)でもよい。メニューバーに「移動」が出ないときは、Finder が前面にない。
 - Simulator は画面が大きいので、共有ウィンドウを全画面にするか、Simulator を縮小表示にして操作する。
-- 実機(iPhone)への確認は、画面共有ではなく OTA([release.md](release.md))を使う。
+- 実機(iPhone)への確認は、画面共有ではなく次の2通りを使う。
+  - 手元の Mac と iPhone が近くにあるとき: `scripts/device.sh`。ビルドして USB かワイヤレスで直接入れて起動する(下の「実機に直接入れる」)。
+  - 離れているとき: OTA([release.md](release.md))。
+
+## 実機に直接入れる
+
+```bash
+scripts/device.sh              # つながっている iPhone が1台ならそれに入れる
+scripts/device.sh <名前|UDID>  # 複数あるとき
+```
+
+- 初回だけ、iPhone を USB でつないで「このコンピュータを信頼」する。iOS 17 以降は Xcode の「Connect via network」チェックが無く、ペア済みなら、同じ Wi-Fi でロック解除していれば自動で届く。届かないときは一度 USB につなぎ直す。
+- iPhone の UDID が開発チーム(`XSC9AJPSP3`)に登録済みで、開発者モードが有効なこと。署名は `-allowProvisioningUpdates` の自動署名。
+- iPhone がロック中だと起動だけ失敗する(インストールは済む)。
 
 ## デモデータを入れ直す
 
