@@ -102,4 +102,30 @@ struct SwiftDataRepositoryTests {
             try photos.add([], to: UUID())
         }
     }
+
+    @Test(.timeLimit(.minutes(1)))
+    func tripLifecycleCreateRenameRemoveRestoreDelete() async throws {
+        var iterator = trips.observeTrips().makeAsyncIterator()
+        _ = await iterator.next()
+
+        let new = Trip(name: "京都", startedAt: .now)
+        try trips.add(new)
+        let created = try #require(await firstValue(of: &iterator) { $0.contains { $0.id == new.id } })
+        #expect(created.first { $0.id == new.id }?.photos.isEmpty == true)
+
+        try trips.rename(new.id, to: "奈良")
+        let renamed = try #require(await firstValue(of: &iterator) { $0.first { $0.id == new.id }?.name == "奈良" })
+        #expect(renamed.contains { $0.id == new.id })
+
+        let date = Date.now
+        try trips.setRemovedAt(date, for: new.id)
+        let removed = try #require(await firstValue(of: &iterator) { $0.first { $0.id == new.id }?.isRemoved == true })
+        #expect(removed.first { $0.id == new.id }?.removedAt != nil)
+
+        try trips.setRemovedAt(nil, for: new.id)
+        _ = try #require(await firstValue(of: &iterator) { $0.first { $0.id == new.id }?.isRemoved == false })
+
+        try trips.delete([new.id])
+        _ = try #require(await firstValue(of: &iterator) { !$0.contains { $0.id == new.id } })
+    }
 }

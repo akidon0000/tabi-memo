@@ -28,9 +28,10 @@ flowchart LR
 
 | 画面のモジュール | 依存する画面 |
 |---|---|
-| `TripMapFeature`(地図。入口) | `PhotoListFeature` `AddPhotosFeature` `EditPhotoFeature` `RecentlyDeletedFeature` |
+| `TripListFeature`(トリップの一覧。入口) | `TripMapFeature` |
+| `TripMapFeature`(地図) | `PhotoListFeature` `AddPhotosFeature` `EditPhotoFeature` `RecentlyDeletedFeature` `CameraFeature` |
 | `PhotoListFeature` | `EditPhotoFeature` |
-| `AddPhotosFeature` `EditPhotoFeature` `RecentlyDeletedFeature` | なし |
+| `AddPhotosFeature` `EditPhotoFeature` `RecentlyDeletedFeature` `CameraFeature` | なし |
 
 新しいファイルは、該当モジュールの `Sources/` の中に置くだけです。パッケージのターゲットはフォルダごと読みます。モジュールを足すときだけ `Package.swift` を書き換えます([development.md](development.md))。
 

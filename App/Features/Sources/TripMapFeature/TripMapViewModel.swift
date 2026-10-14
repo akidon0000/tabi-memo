@@ -6,7 +6,7 @@ import RecentlyDeletedFeature
 import SharedUI
 import Observation
 
-/// 地図画面の状態。表示中のトリップと、パネルに出している写真を持つ。
+/// 地図画面の状態。開いているトリップと、パネルに出している写真を持つ。
 @MainActor
 @Observable
 public final class TripMapViewModel {
@@ -22,17 +22,23 @@ public final class TripMapViewModel {
 
     private var hasPurged = false
     private var hasSelectedInitially = false
-    private let observeCurrentTrip: ObserveCurrentTripUseCase
+    private let tripID: Trip.ID
+    private let observeTrip: ObserveTripUseCase
+    private let getLocation: GetCurrentLocationUseCase
     private let purgeExpiredPhotos: PurgeExpiredPhotosUseCase
     private let removePhoto: RemovePhotoUseCase
 
     public init(
-        observeCurrentTrip: ObserveCurrentTripUseCase,
+        tripID: Trip.ID,
+        observeTrip: ObserveTripUseCase,
+        getLocation: GetCurrentLocationUseCase,
         purgeExpiredPhotos: PurgeExpiredPhotosUseCase,
         removePhoto: RemovePhotoUseCase,
         route: RouteViewModel
     ) {
-        self.observeCurrentTrip = observeCurrentTrip
+        self.tripID = tripID
+        self.observeTrip = observeTrip
+        self.getLocation = getLocation
         self.purgeExpiredPhotos = purgeExpiredPhotos
         self.removePhoto = removePhoto
         self.route = route
@@ -46,7 +52,7 @@ public final class TripMapViewModel {
 
     /// 画面が出ている間、トリップの最新の内容を受け取り続ける。最初の1回だけ、保持期間を過ぎた写真を消す。
     func start() async {
-        for await trip in observeCurrentTrip.execute() {
+        for await trip in observeTrip.execute(tripID: tripID) {
             self.trip = trip
             hasLoaded = true
             guard let trip else { continue }
@@ -64,6 +70,11 @@ public final class TripMapViewModel {
         guard !hasSelectedInitially else { return }
         hasSelectedInitially = true
         selectedPhotoID = trip.activePhotos.first?.id
+    }
+
+    /// 端末の現在地。写真が1枚も無いトリップを開いたとき、地図の中心にする。
+    func currentLocation() async -> Coordinate? {
+        await getLocation.execute()
     }
 
     func select(_ photo: Photo) {

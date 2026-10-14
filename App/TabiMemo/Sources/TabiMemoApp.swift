@@ -14,7 +14,7 @@ struct TabiMemoApp: App {
 
     var body: some Scene {
         WindowGroup {
-            dependencies.makeTripMapView()
+            dependencies.makeTripListView()
         }
     }
 }

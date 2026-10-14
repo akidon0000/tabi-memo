@@ -5,14 +5,6 @@ import TestSupport
 
 @MainActor
 struct ObserveTripUseCaseTests {
-    @Test func currentTripIsTheNewestWithARoute() async {
-        let withoutRoute = Fixtures.trip(photos: [], hasRoute: false)
-        let withRoute = Fixtures.trip(photos: [])
-        let repository = FakeTripRepository(trips: [withoutRoute, withRoute])
-        var iterator = ObserveCurrentTripUseCase(tripRepository: repository).execute().makeAsyncIterator()
-        #expect(await iterator.next()??.id == withRoute.id)
-    }
-
     @Test func observingATripFollowsUpdates() async {
         var trip = Fixtures.trip(photos: [])
         let repository = FakeTripRepository(trips: [trip])

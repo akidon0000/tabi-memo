@@ -32,8 +32,8 @@ extension CustomSheetView {
         .simultaneousGesture(swipeGesture(pageWidth: layout.panelWidth))
         .frame(width: layout.panelWidth, height: layout.panelHeight + ext, alignment: .top)
         .clipShape(shape)
-        // Liquid Glass。ヘッダーの色を tint として乗せる。
-        .glassEffect(.regular.tint(config.headerTint.opacity(0.3)), in: shape)
+        // Liquid Glass。色はかけず、純正のまま。
+        .glassEffect(.regular, in: shape)
     }
 
     /// 写真の下に出す中身(メモなど)。全開のときだけスクロールでき、写真も一緒に上へ流れる。

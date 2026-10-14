@@ -5,15 +5,11 @@ struct PlaybackPhotoView: View {
     let image: Image
 
     var body: some View {
-        ZStack {
-            Color.black.opacity(0.55).ignoresSafeArea()
-            image
-                .resizable()
-                .scaledToFit()
-                .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-                .shadow(radius: 20)
-                .padding(24)
-        }
-        .allowsHitTesting(false)
+        // 画面の縁いっぱい(ステータスバーの裏まで)に広げる。写真は画面を埋めるように拡大し、はみ出す分は切る。
+        Color.black
+            .overlay { image.resizable().scaledToFill() }
+            .clipShape(RoundedRectangle(cornerRadius: 56, style: .continuous))
+            .ignoresSafeArea()
+            .allowsHitTesting(false)
     }
 }

@@ -4,16 +4,16 @@ import SwiftUI
 /// 写真の詳細入力モーダル。選んだ枚数ぶんのページを横にめくり、最後にまとめて保存する。
 public struct AddPhotosView: View {
     @Bindable var viewModel: AddPhotosViewModel
-    let items: [PhotosPickerItem]
+    let source: AddPhotosSource
     /// 閉じるとき。保存したら true、破棄したら false。
     var onFinish: (_ saved: Bool) -> Void
 
     @State private var confirmDiscard = false
     @State private var isReordering = false
 
-    public init(viewModel: AddPhotosViewModel, items: [PhotosPickerItem], onFinish: @escaping (_ saved: Bool) -> Void) {
+    public init(viewModel: AddPhotosViewModel, source: AddPhotosSource, onFinish: @escaping (_ saved: Bool) -> Void) {
         self.viewModel = viewModel
-        self.items = items
+        self.source = source
         self.onFinish = onFinish
     }
 
@@ -25,7 +25,7 @@ public struct AddPhotosView: View {
                 }
         }
         .interactiveDismissDisabled()
-        .task { await viewModel.load(items) }
+        .task { await viewModel.load(source) }
     }
 
     private var editPages: some View {

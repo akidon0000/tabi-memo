@@ -16,6 +16,16 @@
 | FB-7 | 体験の改善 | 全開のとき、メモと写真を同時にスライドさせる | 同上 | 中 | 配信済み(Build 2)。全開だけページごと滑らせる | [0002](requirements/0002-map-and-panel-feedback.md)・[ADR 0010](adr/0010-full-panel-page-slide.md) |
 | FB-8 | 体験の改善 | 全開で下へスクロールすると、同時にモーダルも閉じる | 同上 | 中 | 配信済み(Build 2)。コンパクトへ畳む | [0002](requirements/0002-map-and-panel-feedback.md) |
 | FB-9 | 体験の改善 | 左右にスワイプするとき、写真を薄くしなくてよいかもしれない | 同上 | 低 | 配信済み(Build 2) | [0002](requirements/0002-map-and-panel-feedback.md) |
+| FB-10 | 体験の改善 | 下部パネルのグラバー(ドラッグバー)をもう少し伸ばす | [2026-10-11](feedback/2026-10-11.md) | 低 | 実装済み・未配信(実機で未確認) | [0006](requirements/0006-panel-and-playback-tweaks.md) |
+| FB-11 | 体験の改善 | 全開のパネルの下矢印(畳むボタン)を消す | 同上 | 低 | 実装済み・未配信(実機で未確認) | [0006](requirements/0006-panel-and-playback-tweaks.md) |
+| FB-12 | 体験の改善 | コンパクトのパネルの黄色の色味をやめる | 同上 | 低 | 実装済み・未配信(実機で未確認) | [0006](requirements/0006-panel-and-playback-tweaks.md) |
+| FB-13 | 体験の改善 | 再生中、進行方向の表示(目印の矢印)をやめる | 同上 | 低 | 実装済み・未配信(実機で未確認) | [0006](requirements/0006-panel-and-playback-tweaks.md) |
+| FB-14 | 新機能 | 再生のスピードを変えられるようにする | 同上 | 中 | 実装済み・未配信(実機で未確認) | [0006](requirements/0006-panel-and-playback-tweaks.md) |
+| FB-15 | 新機能 | 再生中に地図の縮尺を操作できるようにする | 同上 | 中 | 実装済み・未配信(実機で未確認) | [0006](requirements/0006-panel-and-playback-tweaks.md) |
+| FB-16 | 体験の改善 | 再生中、写真の拡大を一定の速さで広げる(終わりに向けて遅くしない) | 同上 | 低 | 実装済み・未配信(実機で未確認) | [0006](requirements/0006-panel-and-playback-tweaks.md) |
+| FB-17 | 体験の改善 | 再生中の写真の拡大を、ステータスバーの裏まで画面の縁いっぱいに広げる | 同上 | 低 | 実装済み・未配信(実機で未確認) | [0006](requirements/0006-panel-and-playback-tweaks.md) |
+| FB-18 | 新機能 | トリップの一覧画面を作る | [2026-10-11](feedback/2026-10-11.md) | 中 | 要件の確認待ち | [0007](requirements/0007-trip-list.md) |
+| FB-19 | 新機能 | 「+」を押したら、カメラで撮るか、ライブラリから選ぶかを選べる(アプリ内カメラでの撮影) | 同上 | 中 | 要件の確認待ち | [0008](requirements/0008-in-app-camera.md) |
 
 ## 開発者本人の依頼(FB ではないもの)
 

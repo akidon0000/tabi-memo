@@ -124,7 +124,7 @@ extension CustomSheetView {
         }
     }
 
-    /// 上に固定する行: ドラッグバー、閉じるボタン。専用の背景は敷かず、パネル全体の背景(全開で白)と同じ色にする。
+    /// 上に固定する行: ドラッグバー。専用の背景は敷かず、パネル全体の背景(全開で白)と同じ色にする。
     /// 写真はこの下を、切り取られずに流れる。
     private func fixedRow(_ layout: SheetLayout) -> some View {
         ZStack(alignment: .top) {
@@ -137,20 +137,10 @@ extension CustomSheetView {
 
             Capsule()
                 .fill(.secondary.opacity(0.6))
-                .frame(width: 48, height: 5)
-                // 全開でも、ハーフと同じく上のセーフエリアのすぐ下に置く(×の行より上)。
+                .frame(width: 72, height: 5)
+                // 全開でも、ハーフと同じく上のセーフエリアのすぐ下に置く。
                 .padding(.top, 6)
                 .allowsHitTesting(false)
-                .frame(maxHeight: .infinity, alignment: .top)
-
-            // 全開では、地図画面の「…」が消えて、同じ右上の位置に×が出る。
-            closeButton
-                .frame(maxWidth: .infinity, alignment: .trailing)
-                .padding(.horizontal, headerPadding)
-                .padding(.top, closeRowTop)
-                // 全開のときだけ表示する(ハーフでは出さない)。
-                .opacity(layout.fullProgress)
-                .allowsHitTesting(layout.fullProgress > 0.9)
                 .frame(maxHeight: .infinity, alignment: .top)
         }
     }

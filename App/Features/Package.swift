@@ -26,7 +26,9 @@ let package = Package(
         .library(name: "AddPhotosFeature", targets: ["AddPhotosFeature"]),
         .library(name: "PhotoListFeature", targets: ["PhotoListFeature"]),
         .library(name: "RecentlyDeletedFeature", targets: ["RecentlyDeletedFeature"]),
+        .library(name: "CameraFeature", targets: ["CameraFeature"]),
         .library(name: "TripMapFeature", targets: ["TripMapFeature"]),
+        .library(name: "TripListFeature", targets: ["TripListFeature"]),
     ],
     dependencies: [
         .package(path: "../Domain"),
@@ -43,12 +45,14 @@ let package = Package(
         feature("AddPhotosFeature"),
         feature("PhotoListFeature", dependsOn: ["EditPhotoFeature"]),
         feature("RecentlyDeletedFeature"),
-        feature("TripMapFeature", dependsOn: ["EditPhotoFeature", "PhotoListFeature", "RecentlyDeletedFeature", "AddPhotosFeature"]),
+        feature("CameraFeature"),
+        feature("TripMapFeature", dependsOn: ["EditPhotoFeature", "PhotoListFeature", "RecentlyDeletedFeature", "AddPhotosFeature", "CameraFeature"]),
+        feature("TripListFeature", dependsOn: ["TripMapFeature"]),
         .testTarget(
             name: "FeaturesTests",
             dependencies: [
                 "SharedUI", "EditPhotoFeature", "AddPhotosFeature", "PhotoListFeature", "RecentlyDeletedFeature", "TripMapFeature",
-                domain, .product(name: "TestSupport", package: "Domain"),
+                "CameraFeature", "TripListFeature", domain, .product(name: "TestSupport", package: "Domain"),
             ],
             swiftSettings: [.defaultIsolation(MainActor.self)],
             plugins: [swiftLint]

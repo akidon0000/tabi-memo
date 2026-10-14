@@ -56,6 +56,29 @@ struct PlaybackViewModelTests {
         #expect(viewModel.sample == nil)
     }
 
+    @Test func higherSpeedMovesFartherInTheSameTimeButHoldsForTheSameTime() {
+        func longitudeAfterMoving(multiplier: Double) -> Double {
+            let viewModel = PlaybackViewModel()
+            viewModel.start(path: [a, b], photos: [photo("a", minutes: 1, at: a), photo("b", minutes: 2, at: b)])
+            defer { viewModel.stop() }
+            viewModel.speedMultiplier = multiplier
+            viewModel.tick(0.01)
+            viewModel.tick(PlaybackViewModel.holdSeconds + 0.01)
+            #expect(viewModel.featuredPhotoID == nil)
+            viewModel.tick(1)
+            return viewModel.sample?.coordinate.longitude ?? 0
+        }
+        #expect(longitudeAfterMoving(multiplier: 2) > longitudeAfterMoving(multiplier: 1) * 1.9)
+    }
+
+    @Test func speedMultiplierStaysWithinTheRange() {
+        let viewModel = PlaybackViewModel()
+        viewModel.speedMultiplier = 100
+        #expect(viewModel.clampedSpeedMultiplier == PlaybackViewModel.speedRange.upperBound)
+        viewModel.speedMultiplier = 0
+        #expect(viewModel.clampedSpeedMultiplier == PlaybackViewModel.speedRange.lowerBound)
+    }
+
     @Test func stoppingClearsTheMarker() {
         let viewModel = PlaybackViewModel()
         viewModel.start(path: [a, b], photos: [])

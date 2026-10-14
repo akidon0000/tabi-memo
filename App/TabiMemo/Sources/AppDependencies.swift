@@ -1,9 +1,11 @@
 import AddPhotosFeature
+import CameraFeature
 import DataLayer
 import Domain
 import EditPhotoFeature
 import PhotoListFeature
 import RecentlyDeletedFeature
+import TripListFeature
 import TripMapFeature
 
 /// 依存の組み立て(Composition Root)。Repository と Service をここで作り、UseCase を通して各画面の ViewModel に渡す。
@@ -16,6 +18,8 @@ final class AppDependencies {
     private let suggester: any PhotoSuggesting
     private let routeFinder: any RouteFinding
     private let routeEditRepository: any RouteEditRepository
+    private let locationProvider: any LocationProviding
+    private let photoLibrary: any PhotoLibrarySaving
 
     init(
         tripRepository: any TripRepository,
@@ -23,7 +27,9 @@ final class AppDependencies {
         metadataReader: any PhotoMetadataReading,
         suggester: any PhotoSuggesting,
         routeFinder: any RouteFinding,
-        routeEditRepository: any RouteEditRepository
+        routeEditRepository: any RouteEditRepository,
+        locationProvider: any LocationProviding,
+        photoLibrary: any PhotoLibrarySaving
     ) {
         self.tripRepository = tripRepository
         self.photoRepository = photoRepository
@@ -31,25 +37,30 @@ final class AppDependencies {
         self.suggester = suggester
         self.routeFinder = routeFinder
         self.routeEditRepository = routeEditRepository
+        self.locationProvider = locationProvider
+        self.photoLibrary = photoLibrary
     }
 
-    /// 端末に保存する本番の構成。初回はデモのトリップを入れる。
+    /// 端末に保存する本番の構成。
     static func live() throws -> AppDependencies {
         let store = try SwiftDataStore.live()
-        try store.seedSampleTripIfEmpty()
         return AppDependencies(
             tripRepository: try SwiftDataTripRepository(store: store),
             photoRepository: SwiftDataPhotoRepository(store: store),
             metadataReader: ImageIOPhotoMetadataReader(),
             suggester: FoundationModelsPhotoSuggester(),
             routeFinder: MapKitRouteFinder(),
-            routeEditRepository: SwiftDataRouteEditRepository(store: store)
+            routeEditRepository: SwiftDataRouteEditRepository(store: store),
+            locationProvider: CoreLocationProvider(),
+            photoLibrary: PhotosPhotoLibrary()
         )
     }
 
-    /// アプリの最初の画面。子画面の ViewModel もここから作られる。
-    func makeTripMapView() -> TripMapView {
-        TripMapView(viewModel: makeTripMapViewModel(), children: tripMapChildren)
+    /// アプリの最初の画面(トリップの一覧)。地図画面などの子画面の ViewModel もここから作られる。
+    func makeTripListView() -> TripListView {
+        TripListView(viewModel: makeTripListViewModel()) { [self] tripID in
+            TripMapView(viewModel: makeTripMapViewModel(tripID: tripID), children: tripMapChildren)
+        }
     }
 
     // MARK: - ViewModel
@@ -59,13 +70,35 @@ final class AppDependencies {
             makeEditPhoto: { [self] in makeEditPhotoViewModel(photo: $0) },
             makePhotoList: { [self] in makePhotoListViewModel(tripID: $0) },
             makeRecentlyDeleted: { [self] in makeRecentlyDeletedViewModel(tripID: $0) },
+            makeCamera: { [self] in makeCameraViewModel() },
             makeAddPhotos: { [self] in makeAddPhotosViewModel(count: $0, trip: $1, fallbackCenter: $2, placement: $3) }
         )
     }
 
-    private func makeTripMapViewModel() -> TripMapViewModel {
+    private func makeTripListViewModel() -> TripListViewModel {
+        TripListViewModel(
+            observeTrips: ObserveTripsUseCase(tripRepository: tripRepository),
+            createTrip: CreateTripUseCase(tripRepository: tripRepository),
+            renameTrip: RenameTripUseCase(tripRepository: tripRepository),
+            removeTrip: RemoveTripUseCase(tripRepository: tripRepository),
+            restoreTrip: RestoreTripUseCase(tripRepository: tripRepository),
+            deleteTripPermanently: DeleteTripPermanentlyUseCase(tripRepository: tripRepository),
+            purgeExpiredTrips: PurgeExpiredTripsUseCase(tripRepository: tripRepository)
+        )
+    }
+
+    private func makeCameraViewModel() -> CameraViewModel {
+        CameraViewModel(
+            getLocation: GetCurrentLocationUseCase(provider: locationProvider),
+            saveToLibrary: SavePhotoToLibraryUseCase(library: photoLibrary)
+        )
+    }
+
+    private func makeTripMapViewModel(tripID: Trip.ID) -> TripMapViewModel {
         TripMapViewModel(
-            observeCurrentTrip: ObserveCurrentTripUseCase(tripRepository: tripRepository),
+            tripID: tripID,
+            observeTrip: ObserveTripUseCase(tripRepository: tripRepository),
+            getLocation: GetCurrentLocationUseCase(provider: locationProvider),
             purgeExpiredPhotos: PurgeExpiredPhotosUseCase(photoRepository: photoRepository),
             removePhoto: RemovePhotoUseCase(photoRepository: photoRepository),
             route: RouteViewModel(

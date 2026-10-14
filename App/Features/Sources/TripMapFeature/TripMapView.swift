@@ -1,4 +1,5 @@
 import AddPhotosFeature
+import CameraFeature
 import Domain
 import EditPhotoFeature
 import PhotoListFeature
@@ -23,6 +24,14 @@ public struct TripMapView: View {
     /// いまの地図の表示範囲。スワイプで移動するとき、拡大率を保ったまま中心だけ動かすのに使う。
     @State var visibleRegion: MKCoordinateRegion?
     @State var showPhotoPicker = false
+    /// 「+」を押したあとの、カメラで撮るか・ライブラリから選ぶかの選択。
+    @State var showAddChoice = false
+    @State var showCamera = false
+    /// 選択用のシートを閉じたあとに開くもの(閉じる途中で次の画面を開かないため)。
+    @State var pendingAdd: AddSource?
+    @Environment(\.dismiss) var dismiss
+    @AppStorage(AppearanceKey.backButton) var backButton = BackButtonPlacement.topLeading
+    @AppStorage(AppearanceKey.addChoice) var addChoice = AddChoiceStyle.actionSheet
     @State var pickedItems: [PhotosPickerItem] = []
     @State var addFlow: AddFlow?
     @State var confirmRemove = false
@@ -49,7 +58,7 @@ public struct TripMapView: View {
     /// 写真の追加の流れ。ピッカーで選んだ項目と、その入力状態を一組で持つ。
     struct AddFlow: Identifiable {
         let viewModel: AddPhotosViewModel
-        let items: [PhotosPickerItem]
+        let source: AddPhotosSource
         var id: ObjectIdentifier { ObjectIdentifier(viewModel) }
     }
 
@@ -58,14 +67,18 @@ public struct TripMapView: View {
         self.children = children
     }
 
+    /// 追加の出どころ。
+    enum AddSource { case camera, library }
+
     public var body: some View {
-        NavigationStack {
+        Group {
             if let trip = viewModel.trip {
                 content(trip)
             } else if viewModel.hasLoaded {
                 ContentUnavailableView("トリップがありません", systemImage: "map")
             }
         }
+        .navigationBarBackButtonHidden()
         .task { await viewModel.start() }
     }
 
@@ -75,14 +88,11 @@ public struct TripMapView: View {
             .toolbar(.hidden, for: .navigationBar)
             .overlay { panelLayer }
             // 再生中、写真の場所に着いたら、その写真を拡大して見せる。停止ボタンは、この上に出す。
-            .overlay {
-                if let photo = featuredPlaybackPhoto(in: trip) {
-                    PlaybackPhotoView(image: photo.image)
-                        .transition(.opacity.combined(with: .scale(scale: 0.6)))
-                }
-            }
+            .overlay { playbackPhotoLayer(trip) }
             .animation(.spring(duration: 0.45), value: viewModel.playback.featuredPhotoID)
             .overlay(alignment: .topTrailing) { if !viewModel.route.isEditing { topControls } }
+            .overlay(alignment: .topLeading) { if backButton == .topLeading { backControl } }
+            .overlay(alignment: .bottom) { if viewModel.playback.isPlaying { playbackSpeedControl } }
             .overlay(alignment: .top) { if viewModel.route.isEditing { routeEditBar } }
             // 拡大表示は下からせり上げず、後ろからふわっと(薄い・小さい状態から)出す。
             .overlay {
@@ -96,6 +106,7 @@ public struct TripMapView: View {
             .onChange(of: viewModel.playback.sample) { _, sample in
                 if let sample { followPlayback(sample) }
             }
+            .task(id: trip.id) { await centerOnCurrentLocationIfEmpty(trip) }
             .onAppear {
                 // 開いた直後は最初の写真が選ばれているので、地図もそのスポットへ動かす(パネルに隠れないように)。
                 guard !didFocusInitially, let photo = viewModel.selectedPhoto else { return }
@@ -111,5 +122,17 @@ public struct TripMapView: View {
                 fitAllPhotos(of: trip)
             }
         return withSheets(screen, trip: trip)
+    }
+
+    /// 再生で止まっている写真の拡大。広がるときは一定の速さ、閉じるときは下の spring のまま。
+    @ViewBuilder
+    private func playbackPhotoLayer(_ trip: Trip) -> some View {
+        if let photo = featuredPlaybackPhoto(in: trip) {
+            PlaybackPhotoView(image: photo.image)
+                .transition(.asymmetric(
+                    insertion: AnyTransition.opacity.combined(with: .scale(scale: 0.6)).animation(.linear(duration: 0.45)),
+                    removal: .opacity.combined(with: .scale(scale: 0.6))
+                ))
+        }
     }
 }

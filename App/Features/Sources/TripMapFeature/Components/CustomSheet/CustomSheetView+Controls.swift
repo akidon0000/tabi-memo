@@ -49,19 +49,6 @@ extension CustomSheetView {
             .allowsHitTesting(false)
     }
 
-    /// iOS 26 純正のガラスの丸ボタン(.glass + .circle)。サイズと押下の反応はシステムに任せる。
-    var closeButton: some View {
-        Button(action: collapse) {
-            // 全開では「×」ではなく、下へ畳む向きの「∨」にする。
-            Image(systemName: "chevron.down")
-                .font(.system(size: 12, weight: .bold))
-                .frame(width: closeButtonSize, height: closeButtonSize)
-        }
-        .buttonStyle(.glass)
-        .buttonBorderShape(.circle)
-        .accessibilityLabel("閉じる")
-    }
-
     func titleBlock(title: String, caption: String, fontSize: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title)

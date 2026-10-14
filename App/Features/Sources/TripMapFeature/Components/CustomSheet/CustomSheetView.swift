@@ -61,10 +61,6 @@ struct CustomSheetView<Content: View>: View {
     let closeBarHeight: CGFloat = 44
     let compactMargin: CGFloat = 16
     let actionButtonHeight: CGFloat = 40
-    /// 全開の×。中心は右上の「…」(44pt)と同じ位置にそろえる。
-    let closeButtonSize: CGFloat = 28
-    /// 全開の上の行(バーと×)を置く、パネル上端からの距離。
-    let closeRowTop: CGFloat = 8
     let expandedMargin: CGFloat = 8
 
     var body: some View {

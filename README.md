@@ -52,7 +52,9 @@ flowchart TB
         AppMain["TabiMemoApp<br/>AppDependencies"]
     end
     subgraph Features["Features パッケージ(画面)"]
-        TripMap["TripMapFeature<br/>地図。最初の画面"]
+        TripList["TripListFeature<br/>トリップの一覧。最初の画面"]
+        TripMap["TripMapFeature<br/>地図"]
+        Camera["CameraFeature"]
         PhotoList["PhotoListFeature"]
         AddPhotos["AddPhotosFeature"]
         EditPhoto["EditPhotoFeature"]
@@ -66,9 +68,10 @@ flowchart TB
         Dom["Entity・Rule・UseCase<br/>Repository のプロトコル"]
     end
 
-    AppMain --> TripMap
+    AppMain --> TripList
+    TripList --> TripMap
     AppMain --> Data
-    TripMap --> PhotoList & AddPhotos & EditPhoto & RecentlyDeleted
+    TripMap --> PhotoList & AddPhotos & EditPhoto & RecentlyDeleted & Camera
     PhotoList --> EditPhoto
     Features --> Dom
     Data --> Dom
@@ -125,10 +128,12 @@ tabi-memo/
 │   ├── DataLayer/Sources/DataLayer/
 │   │   ├── Records/               SwiftData の @Model(〜Record)と Entity への変換
 │   │   ├── Repositories/          Repository の実装
-│   │   ├── Services/              ImageIO・FoundationModels の実装
+│   │   ├── Services/              ImageIO・FoundationModels・CoreLocation・Photos の実装
 │   │   └── Persistence/           保存先とデモデータ
 │   └── Features/Sources/
+│       ├── TripListFeature/       トリップの一覧(最初の画面)
 │       ├── TripMapFeature/        地図の画面と、下のパネル(Components/CustomSheet)
+│       ├── CameraFeature/         アプリ内カメラ
 │       ├── PhotoListFeature/      写真の一覧
 │       ├── AddPhotosFeature/      写真の追加
 │       ├── EditPhotoFeature/      写真の編集

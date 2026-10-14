@@ -11,9 +11,12 @@ struct TripMapViewModelTests {
     private let second = Fixtures.photo("second", minutes: 2)
 
     private func makeViewModel(photos: [Photo]) -> (TripMapViewModel, Task<Void, Never>) {
-        let tripRepository = FakeTripRepository(trips: [Fixtures.trip(photos: photos)])
+        let trip = Fixtures.trip(photos: photos)
+        let tripRepository = FakeTripRepository(trips: [trip])
         let viewModel = TripMapViewModel(
-            observeCurrentTrip: ObserveCurrentTripUseCase(tripRepository: tripRepository),
+            tripID: trip.id,
+            observeTrip: ObserveTripUseCase(tripRepository: tripRepository),
+            getLocation: GetCurrentLocationUseCase(provider: FakeLocationProvider(location: Coordinate(latitude: 1, longitude: 2))),
             purgeExpiredPhotos: PurgeExpiredPhotosUseCase(photoRepository: photoRepository),
             removePhoto: RemovePhotoUseCase(photoRepository: photoRepository),
             route: RouteViewModel(

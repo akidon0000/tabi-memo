@@ -10,6 +10,10 @@ public struct Trip: Identifiable, Hashable, Sendable {
     public var photos: [Photo]
     /// 写真を結ぶ線の、ユーザーが直した内容。
     public var routeEdits: [RouteEdit]
+    /// 削除した日時。nil なら一覧に出る。値があれば「最近削除したトリップ」に入り、保持期間を過ぎると完全に消す。
+    public var removedAt: Date?
+
+    public var isRemoved: Bool { removedAt != nil }
 
     public init(
         id: UUID = UUID(),
@@ -18,7 +22,8 @@ public struct Trip: Identifiable, Hashable, Sendable {
         endedAt: Date? = nil,
         locationPoints: [LocationPoint] = [],
         photos: [Photo] = [],
-        routeEdits: [RouteEdit] = []
+        routeEdits: [RouteEdit] = [],
+        removedAt: Date? = nil
     ) {
         self.id = id
         self.name = name
@@ -27,6 +32,7 @@ public struct Trip: Identifiable, Hashable, Sendable {
         self.locationPoints = locationPoints
         self.photos = photos
         self.routeEdits = routeEdits
+        self.removedAt = removedAt
     }
 
     /// 地図・一覧・前後の移動に使う写真。取り除いたものを除き、撮影日時の順。
@@ -37,6 +43,13 @@ public struct Trip: Identifiable, Hashable, Sendable {
     /// 「最近取り除いた項目」に出す写真。新しく取り除いたものが先頭。
     public var removedPhotos: [Photo] {
         photos.filter(\.isRemoved).sorted { ($0.removedAt ?? .distantPast) > ($1.removedAt ?? .distantPast) }
+    }
+
+    /// 一覧の期間(最初の写真〜最後の写真の日)。写真が無いときは、トリップを作った日だけ。
+    public var period: ClosedRange<Date> {
+        let photos = activePhotos
+        guard let first = photos.first, let last = photos.last else { return startedAt...startedAt }
+        return first.takenAt...last.takenAt
     }
 
     /// 軌跡の線。時刻の順に並べた座標。

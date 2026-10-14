@@ -8,6 +8,8 @@ final class TripRecord {
     var name: String
     var startedAt: Date
     var endedAt: Date?
+    /// 削除した日時。nil なら一覧に出る。
+    var removedAt: Date?
 
     @Relationship(deleteRule: .cascade, inverse: \LocationPointRecord.trip)
     var locationPoints: [LocationPointRecord]
@@ -18,8 +20,9 @@ final class TripRecord {
     @Relationship(deleteRule: .cascade, inverse: \RouteEditRecord.trip)
     var routeEdits: [RouteEditRecord]
 
-    init(id: UUID = UUID(), name: String, startedAt: Date, endedAt: Date? = nil) {
+    init(id: UUID = UUID(), name: String, startedAt: Date, endedAt: Date? = nil, removedAt: Date? = nil) {
         self.id = id
+        self.removedAt = removedAt
         self.name = name
         self.startedAt = startedAt
         self.endedAt = endedAt

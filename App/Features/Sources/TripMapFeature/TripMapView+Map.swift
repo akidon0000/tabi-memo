@@ -42,7 +42,7 @@ extension TripMapView {
             }
             if let sample = viewModel.playback.sample {
                 Annotation("", coordinate: sample.coordinate.clLocationCoordinate, anchor: .center) {
-                    playbackMarker(heading: sample.heading)
+                    playbackMarker
                 }
             }
             if viewModel.route.isEditing {
@@ -67,6 +67,8 @@ extension TripMapView {
         }
         .mapStyle(.hybrid())
         .onMapCameraChange(frequency: .onEnd) { visibleRegion = $0.region }
+        // 再生中のピンチは、操作の途中から拡大率を取り込む(目印を中心に置き直すとき、その拡大率を使う)。
+        .onMapCameraChange(frequency: .continuous) { if viewModel.playback.isPlaying { playbackSpan = $0.region.span } }
         .onGeometryChange(for: CGSize.self) { $0.size } action: { mapSize = $0 }
     }
 
@@ -117,19 +119,17 @@ extension TripMapView {
         move(toFit: cluster.photos.map(\.coordinate), minimumMeters: 50)
     }
 
-    /// 経路編集の最中(設定が止める側のとき)と、再生の最中は、地図を指で動かせない。
+    /// 経路編集の最中(設定が止める側のとき)は、地図を指で動かせない。再生の最中は、拡大縮小だけできる(中心は目印を追う)。
     private var mapInteractionModes: MapInteractionModes {
-        (viewModel.route.isEditing && routeEditLocksMap) || viewModel.playback.isPlaying ? [] : .all
+        if viewModel.playback.isPlaying { return .zoom }
+        return viewModel.route.isEditing && routeEditLocksMap ? [] : .all
     }
 
-    /// 再生中に線の上を動く目印。進行方向を向く。
-    private func playbackMarker(heading: Double) -> some View {
-        Image(systemName: "location.north.fill")
-            .font(.system(size: 14, weight: .bold))
-            .foregroundStyle(.white)
-            .rotationEffect(.degrees(heading))
-            .frame(width: 30, height: 30)
-            .background(Circle().fill(Color.blue))
+    /// 再生中に線の上を動く目印。向きは持たない。
+    private var playbackMarker: some View {
+        Circle()
+            .fill(Color.blue)
+            .frame(width: 22, height: 22)
             .overlay(Circle().stroke(.white, lineWidth: 3))
             .shadow(radius: 3)
             .allowsHitTesting(false)
@@ -216,6 +216,17 @@ extension TripMapView {
     func open(_ photo: Photo) {
         viewModel.select(photo)
         focusMap(on: photo)
+    }
+
+    /// 写真が1枚も無いトリップを開いたら、現在地の周りを出す(許可が無い・求まらないときは東京)。
+    func centerOnCurrentLocationIfEmpty(_ trip: Trip) async {
+        guard trip.activePhotos.isEmpty else { return }
+        let tokyo = Coordinate(latitude: 35.6812, longitude: 139.7671)
+        cameraPosition = .region(MKCoordinateRegion(center: tokyo.clLocationCoordinate, span: MKCoordinateSpan(latitudeDelta: 0.2, longitudeDelta: 0.2)))
+        guard let here = await viewModel.currentLocation() else { return }
+        withAnimation(.easeInOut(duration: 0.8)) {
+            cameraPosition = .region(MKCoordinateRegion(center: here.clLocationCoordinate, span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)))
+        }
     }
 
     /// 新しく追加する写真の位置の初期値が決められないときに使う、地図の中心。

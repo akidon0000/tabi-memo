@@ -55,6 +55,8 @@
         { "kind": "package", "package": "Features", "product-name": "AddPhotosFeature" },
         { "kind": "package", "package": "Features", "product-name": "EditPhotoFeature" },
         { "kind": "package", "package": "Features", "product-name": "RecentlyDeletedFeature" },
+        { "kind": "package", "package": "Features", "product-name": "CameraFeature" },
+        { "kind": "package", "package": "Features", "product-name": "TripListFeature" },
       ],
       "build-phases": [
         "compile-sources",
@@ -89,6 +91,14 @@
         }, {
           "package": "Features",
           "product-name": "TripMapFeature",
+          "build-phase": { "build-phase": "frameworks" },
+        }, {
+          "package": "Features",
+          "product-name": "CameraFeature",
+          "build-phase": { "build-phase": "frameworks" },
+        }, {
+          "package": "Features",
+          "product-name": "TripListFeature",
           "build-phase": { "build-phase": "frameworks" },
         },
       ],

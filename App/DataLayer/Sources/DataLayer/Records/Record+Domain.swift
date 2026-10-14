@@ -12,7 +12,8 @@ extension TripRecord {
             endedAt: endedAt,
             locationPoints: locationPoints.map { $0.toDomain() },
             photos: photos.map { $0.toDomain() },
-            routeEdits: routeEdits.map { $0.toDomain() }
+            routeEdits: routeEdits.map { $0.toDomain() },
+            removedAt: removedAt
         )
     }
 }

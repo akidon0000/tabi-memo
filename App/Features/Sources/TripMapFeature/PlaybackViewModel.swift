@@ -13,6 +13,17 @@ public final class PlaybackViewModel {
     /// 短い経路でも、これより遅くは進まない(m/秒)。
     static let minimumSpeed = 30.0
 
+    /// 速さの倍率の範囲。1 が基本の速さ(全長でおよそ20秒)。
+    static let speedRange = 0.5...4.0
+
+    /// いまの速さの倍率。動いている間の速さだけを変え、写真で止まる時間は変えない。
+    var speedMultiplier = 1.0
+
+    /// 範囲に収めた倍率。実際に進める速さには、こちらを使う。
+    var clampedSpeedMultiplier: Double {
+        min(max(speedMultiplier, Self.speedRange.lowerBound), Self.speedRange.upperBound)
+    }
+
     private(set) var isPlaying = false
     /// いまの目印の位置と向き。再生中だけ値がある。
     private(set) var sample: PathPlayback.Sample?
@@ -76,7 +87,7 @@ public final class PlaybackViewModel {
             stop()
             return
         }
-        distance = min(distance + speed * dt, playback.length)
+        distance = min(distance + speed * clampedSpeedMultiplier * dt, playback.length)
         if nextStop < stops.count, distance >= stops[nextStop].distance {
             distance = stops[nextStop].distance
             featuredPhotoID = stops[nextStop].photoID

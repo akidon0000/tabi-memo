@@ -71,6 +71,9 @@ extension TripMapView {
             Button { showRecentlyDeleted = true } label: {
                 Label("最近取り除いた項目", systemImage: "trash")
             }
+            if backButton == .inMenu {
+                Button { dismiss() } label: { Label("トリップ一覧へ", systemImage: "chevron.backward") }
+            }
             Divider()
             Button { viewModel.route.beginEditing() } label: {
                 Label("経路を編集", systemImage: "point.topleft.down.to.point.bottomright.curvepath")
@@ -86,6 +89,22 @@ extension TripMapView {
         .accessibilityLabel("メニュー")
     }
 
+    /// 左上の、トリップ一覧へ戻るボタン。全開に向かうほど薄くして消し、再生中と経路編集中は隠す。
+    var backControl: some View {
+        Button { dismiss() } label: {
+            Image(systemName: "chevron.backward")
+                .font(.system(size: 17, weight: .semibold))
+                .frame(width: 44, height: 44)
+                .glassEffect(.regular.interactive(), in: .circle)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("トリップ一覧へ")
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+        .opacity(viewModel.playback.isPlaying || viewModel.route.isEditing ? 0 : (viewModel.selectedPhoto == nil ? 1 : 1 - panelFullProgress))
+        .allowsHitTesting(!viewModel.playback.isPlaying && !viewModel.route.isEditing && panelFullProgress < 0.5)
+    }
+
     /// 右上の、再生ボタンと「…」。再生中は停止ボタンだけを出す。
     var topControls: some View {
         HStack(spacing: 8) {
@@ -97,6 +116,29 @@ extension TripMapView {
         // 全開に向かうほど薄くして消し、同じ位置にパネルの閉じるボタンを出す。
         .opacity(viewModel.selectedPhoto == nil ? 1 : 1 - panelFullProgress)
         .allowsHitTesting(panelFullProgress < 0.5)
+    }
+
+    /// 再生中だけ画面の下に出す、速さのスライダー。写真で止まる時間は変わらない。
+    var playbackSpeedControl: some View {
+        let speed = Binding(
+            get: { viewModel.playback.speedMultiplier },
+            set: { viewModel.playback.speedMultiplier = $0 }
+        )
+        return HStack(spacing: 12) {
+            Image(systemName: "tortoise.fill")
+            Slider(value: speed, in: PlaybackViewModel.speedRange)
+            Image(systemName: "hare.fill")
+            Text(speed.wrappedValue.formatted(.number.precision(.fractionLength(1))) + "x")
+                .monospacedDigit()
+                .frame(width: 40, alignment: .trailing)
+        }
+        .font(.footnote)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 14)
+        .glassEffect(.regular, in: .capsule)
+        .padding(.horizontal, 16)
+        .padding(.bottom, 8)
+        .accessibilityLabel("再生の速さ")
     }
 
     /// 線が引かれている(写真が2枚以上ある)か、再生中なら押せる。

@@ -79,4 +79,27 @@ struct AddPhotosViewModelTests {
         let viewModel = makeViewModel(count: 1)
         #expect(viewModel.drafts[0].coordinate == nil)
     }
+
+    @Test func capturedPhotosKeepTheirTimeAndPlace() async {
+        let here = Coordinate(latitude: 3, longitude: 4)
+        let viewModel = makeViewModel(count: 2)
+        let photos = [
+            CapturedPhoto(imageData: Data([1]), takenAt: Fixtures.date(minutes: 7), coordinate: here),
+            CapturedPhoto(imageData: Data([2]), takenAt: Fixtures.date(minutes: 8), coordinate: nil),
+        ]
+        await viewModel.load(.captured(photos))
+        #expect(viewModel.drafts[0].takenAt == Fixtures.date(minutes: 7))
+        #expect(viewModel.drafts[0].coordinate == here)
+        #expect(viewModel.drafts[0].hasMetadataDate)
+        // 位置が求まらなかった写真は、地図で置くまで保存できない。
+        #expect(viewModel.drafts[1].coordinate == nil)
+        #expect(!viewModel.canSave)
+    }
+
+    @Test func aPressedLocationWinsOverTheCapturedOne() async {
+        let pressed = Coordinate(latitude: 10, longitude: 20)
+        let viewModel = makeViewModel(count: 1, placement: pressed)
+        await viewModel.load(.captured([CapturedPhoto(imageData: Data([1]), takenAt: .now, coordinate: Coordinate(latitude: 3, longitude: 4))]))
+        #expect(viewModel.drafts[0].coordinate == pressed)
+    }
 }

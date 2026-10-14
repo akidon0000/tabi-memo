@@ -25,11 +25,13 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>撮影した写真をその場所のピンとして記録するために使用します</string>
+	<string>アプリ内カメラで写真を撮って、その場所のピンとして記録するために使用します</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>トリップ記録中はアプリを閉じていても経路を記録し続けるために使用します</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>トリップ記録中の現在地を地図に表示するために使用します</string>
+	<string>撮った写真の位置と、新しいトリップの地図の中心に、現在地を使うために使用します</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>アプリ内カメラで撮った写真を、写真アプリにも保存するために使用します</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>トリップ中に撮った写真をライブラリから選んで経路に追加するために使用します</string>
 	<key>UIApplicationSceneManifest</key>

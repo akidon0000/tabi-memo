@@ -52,8 +52,27 @@ public final class AddPhotosViewModel {
 
     var currentIndex: Int { drafts.firstIndex { $0.id == currentID } ?? 0 }
 
+    /// 写真の出どころを読み込む。ライブラリは順に読み、撮った写真はそのまま入れる。
+    func load(_ source: AddPhotosSource) async {
+        switch source {
+        case .library(let items): await load(items)
+        case .captured(let photos): load(photos)
+        }
+    }
+
+    /// 撮った写真を入れる。日時は撮影した時刻、位置は撮った場所(地図の長押しで指定した位置があれば、そちらを優先)。
+    private func load(_ photos: [CapturedPhoto]) {
+        for (draft, photo) in zip(drafts, photos) {
+            draft.imageData = photo.imageData
+            draft.takenAt = photo.takenAt
+            draft.hasMetadataDate = true
+            if placement == nil { draft.coordinate = photo.coordinate }
+        }
+        prefetchSuggestions()
+    }
+
     /// 選んだ写真を順に読み込む。読めたページから埋まり、AI の提案は表示中とその次のページだけ先に作る。
-    func load(_ items: [PhotosPickerItem]) async {
+    private func load(_ items: [PhotosPickerItem]) async {
         for (draft, item) in zip(drafts, items) {
             guard let data = try? await item.loadTransferable(type: Data.self) else {
                 draft.loadFailed = true
