@@ -7,32 +7,44 @@
 
 <img src="docs/specs/images/02-compact.jpg" width="240" alt="地図に写真のピンが並び、下に写真のパネルが出ている画面">
 
+**目次**: [いまできること](#いまできること) / [動かしてみる](#動かしてみる) / [全体像](#全体像) / [1つの操作の流れ](#1つの操作の流れ) / [フォルダの地図](#フォルダの地図) / [用語](#用語) / [よくある作業](#よくある作業) / [技術](#技術)
+
 ## いまできること
 
-起動すると、トリップの地図が全画面で開きます(当面は地図画面だけに絞っています。[ADR 0001](docs/adr/0001-map-screen-only.md))。
+起動すると、トリップの一覧が開きます。トリップを選ぶと、そのトリップの地図が全画面で開きます([ADR 0019](docs/adr/0019-multiple-trips.md))。
+
+### トリップの一覧
+
+| できること | 画面の仕様 |
+|---|---|
+| トリップを作る・名前を変える・削除する。削除したトリップは7日間「最近削除したトリップ」に残り、元に戻せる | [trip-list.md](docs/specs/trip-list.md) |
+| 一覧の見た目(リスト・カード・グリッド)と並び順を、「見た目の設定」で切り替える | [trip-list.md](docs/specs/trip-list.md) |
+
+### 地図と写真
 
 | できること | 画面の仕様 |
 |---|---|
 | 軌跡と、写真を撮った順のつながりを地図に描く。開いたときは最初の写真が選ばれている。写真のピンを押すと、下のパネルに写真とメモが出る | [map-screen.md](docs/specs/map-screen.md) |
 | パネルを3段階(コンパクト・ハーフ・全開)で開く。全開では左右のスワイプで前後の写真へ移る | [map-screen.md](docs/specs/map-screen.md) |
 | 写真をまとめて追加する。撮影場所は写真の位置情報から入り、AI がタイトルとメモの案を出す | [add-photos.md](docs/specs/add-photos.md) |
+| 「+」から、アプリ内カメラで続けて撮って追加する(位置は撮った場所。写真ライブラリにも保存する)。実機で未確認 | [camera.md](docs/specs/camera.md) |
 | 地図を長押しして、その場所に写真を追加する。写真を撮った順の青い線は、道に沿って引かれる | [map-screen.md](docs/specs/map-screen.md) |
 | 「…」の「経路を編集」で、青い線を長押ししてドラッグし、通る道を直す(何か所でも。1つ戻す・すべて戻すもある。保存される) | [map-screen.md](docs/specs/map-screen.md) |
 | 右上の ▶ で、青い線に沿って目印が動き、地図が追いかける(写真の場所では、その写真が拡大して2秒出る) | [map-screen.md](docs/specs/map-screen.md) |
 | 写真の一覧で、並べ替え・取り除きをする | [photo-list.md](docs/specs/photo-list.md) |
 | 取り除いた写真は7日間「最近取り除いた項目」に残り、元に戻せる | [recently-deleted.md](docs/specs/recently-deleted.md) |
 
-データは端末の中だけに保存します(SwiftData。同期はしません)。リプレイなど、これから作るものは [ROADMAP.md](ROADMAP.md) にあります。
+データは端末の中だけに保存します(SwiftData。同期はしません)。同期やリプレイの発展など、これから作るものは [ROADMAP.md](ROADMAP.md) にあります。
 
 ## 動かしてみる
 
-必要なもの: Xcode 27 以降(プロジェクトが JSON 形式のため。確認は Xcode 27.2 beta)、iOS 27 のシミュレーター。
+必要なもの: Xcode 27 以降(プロジェクトが JSON 形式のため。確認は Xcode 27.2 beta)、iOS 27 のシミュレーター。アプリ内カメラの確認には実機が要ります(シミュレーターにはカメラが無いため)。
 
 ```bash
 make xcode-open
 ```
 
-Xcode が開いたら、左上のスキームを **TabiMemo** にして ⌘R で起動します。初回はデモのトリップ(渋谷→代々木公園、写真3枚)が入ります。
+Xcode が開いたら、左上のスキームを **TabiMemo** にして ⌘R で起動します。初回はトリップが無いので、右上の「+」で作ります。
 
 テストは、ターミナルからまとめて動かします。
 
@@ -40,7 +52,7 @@ Xcode が開いたら、左上のスキームを **TabiMemo** にして ⌘R で
 scripts/test.sh
 ```
 
-ビルドやシミュレーターでの確認の細かい手順は [development.md](docs/handbook/development.md) にあります。
+テストはパッケージの中にあり、アプリのスキーム(TabiMemo)では動きません。ビルドやシミュレーターでの確認、実機に入れる手順は [development.md](docs/handbook/development.md) にあります。
 
 ## 全体像
 
@@ -121,14 +133,15 @@ tabi-memo/
 │   │   │   ├── Entities/          Trip・Photo などのデータ(純粋な struct)
 │   │   │   ├── Rules/             並び順・クラスタ・保持期間などの計算
 │   │   │   ├── Repositories/      保存のプロトコル
-│   │   │   ├── Services/          写真の読み取り・AI のプロトコル
+│   │   │   ├── Services/          写真の読み取り・AI・位置・経路検索などのプロトコル
+│   │   │   ├── Support/           小さな補助(AsyncStream の map)
 │   │   │   └── UseCases/          操作1つにつき1つの型(RemovePhotoUseCase など)
 │   │   ├── Sources/TestSupport/   テスト用の偽物の Repository
 │   │   └── Tests/
 │   ├── DataLayer/Sources/DataLayer/
 │   │   ├── Records/               SwiftData の @Model(〜Record)と Entity への変換
 │   │   ├── Repositories/          Repository の実装
-│   │   ├── Services/              ImageIO・FoundationModels・CoreLocation・Photos の実装
+│   │   ├── Services/              ImageIO・FoundationModels・CoreLocation・MapKit・Photos の実装
 │   │   └── Persistence/           保存先とデモデータ
 │   └── Features/Sources/
 │       ├── TripListFeature/       トリップの一覧(最初の画面)
@@ -139,7 +152,7 @@ tabi-memo/
 │       ├── EditPhotoFeature/      写真の編集
 │       ├── RecentlyDeletedFeature/ 最近取り除いた項目
 │       └── SharedUI/              複数の画面で使う部品
-├── scripts/                   test.sh(テスト)、testflight.sh(配信)、ota.sh(実機用の ipa)
+├── scripts/                   test.sh(テスト)、device.sh(近くの実機に入れる)、ota.sh(実機用の ipa)、testflight.sh(配信)
 └── docs/                      ADR・handbook・画面の仕様
 ```
 
@@ -166,6 +179,7 @@ tabi-memo/
 | 操作(UseCase)を1つ足す | [architecture.md「UseCase を1つ足す」](docs/handbook/architecture.md#手順-usecase-を1つ足す) |
 | 下のパネルを触る | [custom-sheet.md](docs/handbook/custom-sheet.md) |
 | シミュレーターで確認する・スクリーンショットを撮る | [development.md](docs/handbook/development.md) |
+| 実機で確認する | [development.md「実機に直接入れる」](docs/handbook/development.md#実機に直接入れる)、離れているときは [release.md「開発中の実機確認(OTA)」](docs/handbook/release.md#開発中の実機確認ota) |
 | TestFlight に配信する | [release.md](docs/handbook/release.md) |
 | なぜこの作りなのかを知る | [ADR の一覧](docs/adr/README.md) |
 
@@ -173,4 +187,4 @@ tabi-memo/
 
 ## 技術
 
-SwiftUI、SwiftData、MapKit、PhotosUI、FoundationModels(端末内の AI)。Swift 6 の strict concurrency。対象は iOS 27 以降です(SwiftData の `ResultsObserver` を使うため。[ADR 0009](docs/adr/0009-clean-architecture.md))。外部ライブラリは SwiftLint だけです。
+SwiftUI、SwiftData、MapKit、PhotosUI、AVFoundation(アプリ内カメラ)、CoreLocation、FoundationModels(端末内の AI)。Swift 6 の strict concurrency。対象は iOS 27 以降です(SwiftData の `ResultsObserver` を使うため。[ADR 0009](docs/adr/0009-clean-architecture.md))。外部ライブラリは SwiftLint だけです。
